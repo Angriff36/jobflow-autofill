@@ -49,7 +49,7 @@ function PopupApp() {
   const [isAutofilling, setIsAutofilling] = useState(false)
   const [status, setStatus] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [fillCount, setFillCount] = useState(0)
-  const [view, setView] = useState<'main' | 'settings'>('main')
+  const [view, setView] = useState<'main' | 'settings' | 'profile'>('main')
 
   useEffect(() => {
     loadData()
@@ -156,7 +156,7 @@ function PopupApp() {
   }
 
   const handleOpenDashboard = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') })
+    setView('profile')
   }
 
   const handleHighlightFields = async () => {
@@ -205,6 +205,8 @@ function PopupApp() {
 
       {view === 'settings' ? (
         <SettingsView onBack={() => setView('main')} />
+      ) : view === 'profile' ? (
+        <ProfileSetupView onBack={() => setView('main')} onSaved={(p) => { setProfile(p); setView('main'); }} />
       ) : (
         <>
           {/* Status Message */}
@@ -462,6 +464,106 @@ function SettingsView({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// Profile Setup View (inline in popup — works on all browsers)
+// ============================================================================
+
+function ProfileSetupView({ onBack, onSaved }: { onBack: () => void; onSaved: (p: Profile) => void }) {
+  const [form, setForm] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    city: '', state: '', country: '',
+    linkedIn: '', company: '', title: '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    chrome.storage.local.get('profile', (result) => {
+      const p = result.profile
+      if (p?.personal) {
+        setForm({
+          firstName: p.personal.firstName || '',
+          lastName: p.personal.lastName || '',
+          email: p.personal.email || '',
+          phone: p.personal.phone || '',
+          city: p.personal.location?.city || '',
+          state: p.personal.location?.state || '',
+          country: p.personal.location?.country || '',
+          linkedIn: p.personal.linkedIn || '',
+          company: p.work?.currentCompany || '',
+          title: p.work?.currentTitle || '',
+        })
+      }
+    })
+  }, [])
+
+  const handleSave = async () => {
+    if (!form.firstName || !form.email) return
+    setSaving(true)
+    const profile: Profile = {
+      personal: {
+        firstName: form.firstName, lastName: form.lastName,
+        email: form.email, phone: form.phone,
+        location: { city: form.city, state: form.state },
+        linkedIn: form.linkedIn,
+      },
+      workExperience: form.company ? [{ company: form.company, title: form.title }] : [],
+    }
+    // Also save in the extended format for autofill
+    const extProfile = {
+      personal: {
+        ...profile.personal,
+        location: { address: '', city: form.city, state: form.state, zip: '', country: form.country },
+      },
+      work: { currentCompany: form.company, currentTitle: form.title },
+    }
+    await chrome.storage.local.set({ profile: extProfile })
+    setSaving(false)
+    onSaved(profile)
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '7px 10px', border: '1px solid #d1d5db',
+    borderRadius: '6px', fontSize: '13px', marginBottom: '8px',
+  }
+  const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600 as const, color: '#6b7280', marginBottom: '2px' }
+
+  return (
+    <div>
+      <button onClick={onBack} style={{ display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#6b7280',background:'none',border:'none',cursor:'pointer',padding:0,marginBottom:'12px' }}>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+        Back
+      </button>
+      <h2 style={{ fontSize:'16px', fontWeight:600, margin:'0 0 12px' }}>Set Up Profile</h2>
+
+      <div style={{ display:'flex', gap:'8px' }}>
+        <div style={{ flex:1 }}><label style={labelStyle}>First Name *</label><input style={inputStyle} value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} placeholder="Jane" /></div>
+        <div style={{ flex:1 }}><label style={labelStyle}>Last Name</label><input style={inputStyle} value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} placeholder="Doe" /></div>
+      </div>
+      <label style={labelStyle}>Email *</label><input style={inputStyle} value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="jane@example.com" type="email" />
+      <label style={labelStyle}>Phone</label><input style={inputStyle} value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="(555) 123-4567" />
+      <div style={{ display:'flex', gap:'8px' }}>
+        <div style={{ flex:2 }}><label style={labelStyle}>City</label><input style={inputStyle} value={form.city} onChange={e => setForm({...form, city: e.target.value})} placeholder="San Francisco" /></div>
+        <div style={{ flex:1 }}><label style={labelStyle}>State</label><input style={inputStyle} value={form.state} onChange={e => setForm({...form, state: e.target.value})} placeholder="CA" /></div>
+      </div>
+      <label style={labelStyle}>Country</label><input style={inputStyle} value={form.country} onChange={e => setForm({...form, country: e.target.value})} placeholder="United States" />
+      <label style={labelStyle}>LinkedIn</label><input style={inputStyle} value={form.linkedIn} onChange={e => setForm({...form, linkedIn: e.target.value})} placeholder="https://linkedin.com/in/you" />
+      <div style={{ display:'flex', gap:'8px' }}>
+        <div style={{ flex:1 }}><label style={labelStyle}>Company</label><input style={inputStyle} value={form.company} onChange={e => setForm({...form, company: e.target.value})} placeholder="Acme Corp" /></div>
+        <div style={{ flex:1 }}><label style={labelStyle}>Title</label><input style={inputStyle} value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Engineer" /></div>
+      </div>
+
+      <button onClick={handleSave} disabled={!form.firstName || !form.email || saving} style={{
+        width:'100%', padding:'10px', fontSize:'14px', fontWeight:600,
+        color:'#fff', backgroundColor: (!form.firstName || !form.email) ? '#93c5fd' : '#2563eb',
+        border:'none', borderRadius:'8px', cursor: (!form.firstName || !form.email) ? 'not-allowed' : 'pointer',
+        marginTop:'4px',
+      }}>
+        {saving ? 'Saving...' : 'Save Profile'}
+      </button>
     </div>
   )
 }
