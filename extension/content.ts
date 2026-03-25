@@ -37,6 +37,34 @@
       linkedIn?: string
       portfolio?: string
       website?: string
+      github?: string
+    }
+    work?: {
+      currentCompany?: string
+      currentTitle?: string
+      yearsExperience?: string
+    }
+    education?: {
+      school?: string
+      degree?: string
+      major?: string
+      graduationYear?: string
+    }
+    eeo?: {
+      gender?: string
+      race?: string
+      veteran?: string
+      disability?: string
+      pronouns?: string
+    }
+    preferences?: {
+      salary?: string
+      startDate?: string
+      sponsorship?: string
+      authorized?: string
+      relocate?: string
+      remote?: string
+      hearAbout?: string
     }
     [key: string]: unknown
   }
@@ -50,33 +78,44 @@
     firstName: [
       /^(first_?name|firstname|first_name|given_?name|fname)$/i,
       /^name_first$/i,
+      /^applicant_first_?name$/i,
+      /^candidate_first_?name$/i,
     ],
     lastName: [
       /^(last_?name|lastname|last_name|family_?name|surname|lname)$/i,
       /^name_last$/i,
+      /^applicant_last_?name$/i,
+      /^candidate_last_?name$/i,
     ],
     fullName: [
       /^(full_?name|fullname|full_name|name|your_?name)$/i,
       /^applicant_?name$/i,
+      /^candidate_?name$/i,
     ],
     email: [
       /^(email|email_?address|e_?mail|user_?email|login_?email)$/i,
       /^email_address$/i,
+      /^applicant_?email$/i,
+      /^candidate_?email$/i,
     ],
     phone: [
       /^(phone|mobile|cell|telephone|tel|phone_?number|contact_?phone|phone_?primary)$/i,
       /^mobile_?number$/i,
+      /^applicant_?phone$/i,
+      /^candidate_?phone$/i,
     ],
 
     // Address
     address: [
       /^(address|street|street_?address|addr|address1|address_?line_?1)$/i,
+      /^home_?address$/i,
+      /^mailing_?address$/i,
     ],
     address2: [
       /^(address2|address_?line_?2|apartment|suite|unit|apt)$/i,
     ],
     city: [
-      /^(city|town|location|city_?name)$/i,
+      /^(city|town|location|city_?name|current_?location)$/i,
     ],
     state: [
       /^(state|province|region|state_?province|state_?code)$/i,
@@ -88,39 +127,115 @@
       /^(country|nation|nationality|country_?code|country_?name)$/i,
     ],
 
-    // Professional
+    // Professional Links — includes Lever bracket notation urls[LinkedIn]
     linkedIn: [
       /^(linkedin|linked_?in|linkedin_?url|linkedin_?profile)$/i,
+      /^urls\[linkedin\]$/i,
+      /^social_?linkedin$/i,
     ],
     portfolio: [
-      /^(portfolio|website|personal_?site|web_?site|url|homepage)$/i,
+      /^(portfolio|personal_?site|web_?site|homepage)$/i,
+      /^urls\[other\s*website\]$/i,
+      /^urls\[portfolio\]$/i,
+      /^urls\[website\]$/i,
     ],
     github: [
       /^(github|github_?url|github_?profile)$/i,
+      /^urls\[github\]$/i,
+      /^social_?github$/i,
+    ],
+    website: [
+      /^(website|personal_?website|web_?url|url|homepage)$/i,
+      /^urls\[personal\]$/i,
     ],
 
     // Work History
     company: [
       /^(company|employer|company_?name|organization|org|current_?company)$/i,
+      /^current_?employer$/i,
+      /^most_?recent_?employer$/i,
     ],
     jobTitle: [
       /^(title|job_?title|position|role|current_?title|designation)$/i,
+      /^current_?role$/i,
+      /^current_?position$/i,
+    ],
+    yearsExperience: [
+      /^(years_?experience|experience_?years|yrs_?exp|total_?experience)$/i,
     ],
 
     // Education
     school: [
       /^(school|university|college|institution|education_?institution)$/i,
+      /^school_?name$/i,
+      /^alma_?mater$/i,
     ],
     degree: [
-      /^(degree|education_?level|degree_?type)$/i,
+      /^(degree|education_?level|degree_?type|highest_?degree)$/i,
     ],
     major: [
-      /^(major|field|field_?of_?study|area_?of_?study)$/i,
+      /^(major|field|field_?of_?study|area_?of_?study|discipline)$/i,
+    ],
+    graduationYear: [
+      /^(graduation_?year|grad_?year|year_?graduated|graduation_?date)$/i,
+    ],
+
+    // EEO / Demographics
+    gender: [
+      /^(gender|sex)$/i,
+      /^eeo\[gender\]$/i,
+      /^demographic_?gender$/i,
+    ],
+    race: [
+      /^(race|ethnicity|race_?ethnicity)$/i,
+      /^eeo\[race\]$/i,
+      /^demographic_?race$/i,
+    ],
+    veteran: [
+      /^(veteran|veteran_?status|vet_?status)$/i,
+      /^eeo\[veteran\]$/i,
+    ],
+    disability: [
+      /^(disability|disability_?status)$/i,
+      /^eeo\[disability\]$/i,
+    ],
+    disabilitySignatureDate: [
+      /^eeo\[disabilitySignatureDate\]$/i,
+      /^disability_?signature_?date$/i,
+    ],
+    pronouns: [
+      /^(pronouns|preferred_?pronouns)$/i,
+    ],
+
+    // Preferences / Common Questions
+    salary: [
+      /^(salary|desired_?salary|expected_?salary|salary_?expectation|compensation)$/i,
+      /^pay_?expectation$/i,
+    ],
+    startDate: [
+      /^(start_?date|available_?date|earliest_?start|availability)$/i,
+      /^when_?can_?you_?start$/i,
+    ],
+    sponsorship: [
+      /^(sponsorship|visa_?sponsorship|require_?sponsorship|need_?sponsorship)$/i,
+    ],
+    authorized: [
+      /^(authorized|work_?authorization|legally_?authorized|work_?permit)$/i,
+      /^authorized_?to_?work$/i,
+    ],
+    relocate: [
+      /^(relocate|willing_?to_?relocate|relocation|open_?to_?relocation)$/i,
+    ],
+    remote: [
+      /^(remote|work_?preference|work_?location_?preference|on_?site)$/i,
+    ],
+    hearAbout: [
+      /^(hear_?about|how_?heard|referral_?source|source|how_?did_?you_?hear)$/i,
     ],
 
     // Other
     coverLetter: [
-      /^(cover_?letter|coverletter|message|additional_?info)$/i,
+      /^(cover_?letter|coverletter|message|additional_?info|comments)$/i,
     ],
     resume: [
       /^(resume|cv|curriculum|resume_?file|cv_?file)$/i,
@@ -131,42 +246,87 @@
   const LABEL_PATTERNS: Record<string, RegExp[]> = {
     firstName: [/first\s*name/i, /given\s*name/i],
     lastName: [/last\s*name/i, /family\s*name/i, /surname/i],
-    fullName: [/full\s*name/i, /your\s*name/i, /^name$/i],
+    fullName: [/full\s*name/i, /your\s*name/i, /^name\s*[✱*]?$/i],
     email: [/e[\s-]*mail/i],
-    phone: [/phone/i, /mobile/i, /telephone/i, /cell/i],
-    address: [/street\s*address/i, /address\s*(line)?\s*1/i, /^address$/i],
+    phone: [/phone/i, /mobile/i, /telephone/i, /cell\s*phone/i],
+    address: [/street\s*address/i, /address\s*(line)?\s*1/i, /^address\s*[✱*]?$/i, /home\s*address/i],
     address2: [/address\s*(line)?\s*2/i, /apartment/i, /suite/i, /unit/i],
-    city: [/^city$/i, /^town$/i],
-    state: [/^state$/i, /province/i, /^region$/i],
+    city: [/^city\s*[✱*]?$/i, /^town$/i, /current\s*location/i, /^location$/i],
+    state: [/^state\s*[✱*]?$/i, /province/i, /^region$/i],
     zip: [/zip/i, /postal/i, /postcode/i],
-    country: [/country/i],
+    country: [/country/i, /^nation/i],
     linkedIn: [/linkedin/i],
-    portfolio: [/portfolio/i, /personal\s*(web)?site/i],
+    portfolio: [/portfolio/i, /personal\s*(web)?site/i, /other\s*website/i],
     github: [/github/i],
-    company: [/company/i, /employer/i, /organization/i],
-    jobTitle: [/job\s*title/i, /position/i, /current\s*title/i, /^title$/i, /^role$/i],
-    school: [/school/i, /university/i, /college/i, /institution/i],
-    degree: [/degree/i, /education\s*level/i],
-    major: [/major/i, /field\s*of\s*study/i],
-    coverLetter: [/cover\s*letter/i],
-    resume: [/resume/i, /^cv$/i],
+    website: [/^website$/i, /personal\s*url/i, /web\s*page/i],
+    company: [/company/i, /employer/i, /organization/i, /current\s*(company|employer)/i, /most\s*recent\s*employer/i],
+    jobTitle: [/job\s*title/i, /position/i, /current\s*title/i, /^title\s*[✱*]?$/i, /^role$/i, /current\s*role/i],
+    yearsExperience: [/years?\s*(of\s*)?experience/i, /total\s*experience/i, /how\s*many\s*years/i],
+    school: [/school/i, /university/i, /college/i, /institution/i, /alma\s*mater/i],
+    degree: [/degree/i, /education\s*level/i, /highest\s*degree/i, /level\s*of\s*education/i],
+    major: [/major/i, /field\s*of\s*study/i, /area\s*of\s*study/i, /discipline/i, /concentration/i],
+    graduationYear: [/graduation\s*(year|date)/i, /year\s*graduated/i, /when.*graduat/i],
+    gender: [/^gender\s*[✱*]?$/i, /^sex$/i],
+    race: [/^race/i, /ethnicity/i, /racial/i, /hispanic\s*or\s*latin/i],
+    veteran: [/veteran/i, /military\s*service/i, /served\s*in/i],
+    disability: [/disability/i, /disabled/i],
+    salary: [/salary/i, /compensation/i, /desired\s*pay/i, /pay\s*expectation/i, /expected\s*salary/i],
+    startDate: [/start\s*date/i, /when\s*can\s*you\s*start/i, /earliest\s*(available|start)/i, /^availability$/i, /available\s*to\s*start/i],
+    sponsorship: [/sponsorship/i, /visa\s*sponsor/i, /require.*sponsor/i, /need.*sponsor/i, /immigration\s*sponsor/i],
+    authorized: [/authorized\s*to\s*work/i, /legally\s*authorized/i, /work\s*authorization/i, /eligible\s*to\s*work/i, /right\s*to\s*work/i, /permitted\s*to\s*work/i],
+    relocate: [/relocat/i, /willing\s*to\s*(move|relocat)/i, /open\s*to\s*relocation/i],
+    remote: [/work\s*preference/i, /remote.*on.?site/i, /on.?site.*remote/i, /work\s*location\s*preference/i],
+    hearAbout: [/how\s*did\s*you\s*hear/i, /where\s*did\s*you\s*(hear|learn|find)/i, /referral\s*source/i, /how\s*did\s*you\s*find/i],
+    pronouns: [/pronouns/i, /preferred\s*pronouns/i],
+    disabilitySignatureDate: [/disability.*signature.*date/i],
+    coverLetter: [/cover\s*letter/i, /additional\s*info/i, /additional\s*comments/i],
+    resume: [/resume/i, /^cv$/i, /curriculum\s*vitae/i],
   }
 
   // Map form field keys to profile data paths
   const FIELD_TO_PROFILE_MAP: Record<string, string> = {
+    // Personal
     firstName: 'personal.firstName',
     lastName: 'personal.lastName',
-    fullName: '__fullName__', // Special handling for concatenation
+    fullName: '__fullName__',
     email: 'personal.email',
     phone: 'personal.phone',
+    // Address
     address: 'personal.location.address',
     city: 'personal.location.city',
     state: 'personal.location.state',
     zip: 'personal.location.zip',
     country: 'personal.location.country',
+    // Links
     linkedIn: 'personal.linkedIn',
     portfolio: 'personal.portfolio',
-    github: 'personal.website',
+    github: 'personal.github',
+    website: 'personal.website',
+    // Work
+    company: 'work.currentCompany',
+    jobTitle: 'work.currentTitle',
+    yearsExperience: 'work.yearsExperience',
+    // Education
+    school: 'education.school',
+    degree: 'education.degree',
+    major: 'education.major',
+    graduationYear: 'education.graduationYear',
+    // EEO
+    gender: 'eeo.gender',
+    race: 'eeo.race',
+    veteran: 'eeo.veteran',
+    disability: 'eeo.disability',
+    // Preferences
+    salary: 'preferences.salary',
+    startDate: 'preferences.startDate',
+    sponsorship: 'preferences.sponsorship',
+    authorized: 'preferences.authorized',
+    relocate: 'preferences.relocate',
+    remote: 'preferences.remote',
+    hearAbout: 'preferences.hearAbout',
+    pronouns: 'eeo.pronouns',
+    disabilitySignatureDate: '__today__',
+    coverLetter: '__skip__',
   }
 
   // ============================================================================
@@ -350,10 +510,14 @@
       // Get the value from the profile
       let value: unknown
       if (field.suggestedMapping === '__fullName__') {
-        // Special handling: concatenate first + last name
         const first = profile.personal?.firstName || ''
         const last = profile.personal?.lastName || ''
         value = [first, last].filter(Boolean).join(' ')
+      } else if (field.suggestedMapping === '__today__') {
+        const d = new Date()
+        value = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`
+      } else if (field.suggestedMapping === '__skip__') {
+        continue
       } else {
         value = getNestedValue(profile, field.suggestedMapping)
       }
@@ -398,6 +562,7 @@
 
   function fillSelect(select: HTMLSelectElement, value: string): boolean {
     const lowerValue = value.toLowerCase()
+    const valueWords = lowerValue.split(/\s+/)
 
     // Try exact match first
     for (const option of select.options) {
@@ -408,12 +573,31 @@
       }
     }
 
-    // Try partial match
+    // Try partial match (value contains search or search contains value)
     for (const option of select.options) {
-      if (option.value.toLowerCase().includes(lowerValue) ||
-          option.textContent?.trim().toLowerCase().includes(lowerValue)) {
-        select.value = option.value
-        return true
+      const optText = option.textContent?.trim().toLowerCase() || ''
+      const optVal = option.value.toLowerCase()
+      if (optVal.includes(lowerValue) || optText.includes(lowerValue) ||
+          lowerValue.includes(optVal) || lowerValue.includes(optText)) {
+        if (optVal && optVal !== '') { select.value = option.value; return true }
+      }
+    }
+
+    // Try keyword match — any word from value appears in option
+    for (const option of select.options) {
+      const optText = (option.textContent?.trim().toLowerCase() || '') + ' ' + option.value.toLowerCase()
+      if (valueWords.some(w => w.length > 2 && optText.includes(w))) {
+        if (option.value && option.value !== '') { select.value = option.value; return true }
+      }
+    }
+
+    // For Yes/No style selects, try matching common patterns
+    if (/^(yes|no|true|false)$/i.test(value)) {
+      for (const option of select.options) {
+        const optText = option.textContent?.trim().toLowerCase() || ''
+        if (optText.startsWith(lowerValue) || optText === lowerValue) {
+          select.value = option.value; return true
+        }
       }
     }
 
