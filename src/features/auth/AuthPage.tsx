@@ -11,12 +11,12 @@ export function AuthPage() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    navigate('/dashboard', { replace: true })
+    navigate('/app/dashboard', { replace: true })
     return null
   }
 
   const handleSuccess = () => {
-    navigate('/dashboard', { replace: true })
+    navigate('/app/dashboard', { replace: true })
   }
 
   return (

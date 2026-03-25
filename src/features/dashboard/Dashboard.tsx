@@ -78,7 +78,7 @@ export function Dashboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
         <button
-          onClick={() => navigate('/applications')}
+          onClick={() => navigate('/app/applications')}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
         >
           View all applications <ArrowRight className="w-4 h-4" />
@@ -125,7 +125,7 @@ export function Dashboard() {
               <div
                 key={stage}
                 className={`rounded-lg border p-4 text-center transition-colors hover:shadow-sm cursor-pointer ${config.bgColor}`}
-                onClick={() => navigate('/applications')}
+                onClick={() => navigate('/app/applications')}
               >
                 <Icon className={`w-5 h-5 mx-auto mb-1.5 ${config.color}`} />
                 <p className="text-2xl font-bold text-gray-900">{count}</p>
@@ -150,7 +150,7 @@ export function Dashboard() {
                 <div
                   key={app.id}
                   className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate('/applications')}
+                  onClick={() => navigate('/app/applications')}
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-900">{app.company}</p>
@@ -174,7 +174,7 @@ export function Dashboard() {
             <div className="text-center py-4">
               <p className="text-sm text-gray-400">No applications yet.</p>
               <button
-                onClick={() => navigate('/applications')}
+                onClick={() => navigate('/app/applications')}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-1"
               >
                 Add your first application
@@ -186,7 +186,7 @@ export function Dashboard() {
                 <div
                   key={app.id}
                   className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate('/applications')}
+                  onClick={() => navigate('/app/applications')}
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-900">{app.company}</p>
