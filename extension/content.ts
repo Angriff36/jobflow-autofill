@@ -116,6 +116,9 @@
     ],
     city: [
       /^(city|town|location|city_?name|current_?location)$/i,
+      /^candidate.?location$/i,
+      /^job.?location$/i,
+      /^preferred.?location$/i,
     ],
     state: [
       /^(state|province|region|state_?province|state_?code)$/i,
@@ -190,6 +193,8 @@
       /^(race|ethnicity|race_?ethnicity)$/i,
       /^eeo\[race\]$/i,
       /^demographic_?race$/i,
+      /^hispanic_?ethnicity$/i,
+      /^race_?ethnicity_?combined$/i,
     ],
     veteran: [
       /^(veteran|veteran_?status|vet_?status)$/i,
@@ -251,7 +256,7 @@
     phone: [/phone/i, /mobile/i, /telephone/i, /cell\s*phone/i],
     address: [/street\s*address/i, /address\s*(line)?\s*1/i, /^address\s*[✱*]?$/i, /home\s*address/i],
     address2: [/address\s*(line)?\s*2/i, /apartment/i, /suite/i, /unit/i],
-    city: [/^city\s*[✱*]?$/i, /^town$/i, /current\s*location/i, /^location$/i],
+    city: [/^city\s*[✱*]?$/i, /^town$/i, /current\s*location/i, /^location\s*[✱*(]/i, /location\s*\(city\)/i],
     state: [/^state\s*[✱*]?$/i, /province/i, /^region$/i],
     zip: [/zip/i, /postal/i, /postcode/i],
     country: [/country/i, /^nation/i],
@@ -267,7 +272,7 @@
     major: [/major/i, /field\s*of\s*study/i, /area\s*of\s*study/i, /discipline/i, /concentration/i],
     graduationYear: [/graduation\s*(year|date)/i, /year\s*graduated/i, /when.*graduat/i],
     gender: [/^gender\s*[✱*]?$/i, /^sex$/i],
-    race: [/^race/i, /ethnicity/i, /racial/i, /hispanic\s*or\s*latin/i],
+    race: [/^race/i, /ethnicity/i, /racial/i, /hispanic/i, /latino/i],
     veteran: [/veteran/i, /military\s*service/i, /served\s*in/i],
     disability: [/disability/i, /disabled/i],
     salary: [/salary/i, /compensation/i, /desired\s*pay/i, /pay\s*expectation/i, /expected\s*salary/i],
