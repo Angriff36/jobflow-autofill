@@ -254,6 +254,58 @@ export const notificationRepository = {
 }
 
 // ============================================================================
+// Form Schema Repository
+// ============================================================================
+
+export const formSchemaRepository = {
+  async getAll(): Promise<FormSchema[]> {
+    return db.formSchemas.toArray()
+  },
+
+  async getById(id: string): Promise<FormSchema | undefined> {
+    return db.formSchemas.get(id)
+  },
+
+  async getByDomain(domain: string): Promise<FormSchema[]> {
+    return db.formSchemas.where('domain').equals(domain).toArray()
+  },
+
+  async findByUrl(url: string): Promise<FormSchema | undefined> {
+    const schemas = await db.formSchemas.toArray()
+    return schemas.find(schema => {
+      try {
+        return new RegExp(schema.urlPattern).test(url)
+      } catch {
+        return url.includes(schema.urlPattern)
+      }
+    })
+  },
+
+  async create(schema: Omit<FormSchema, 'id' | 'createdAt'>): Promise<string> {
+    const newSchema: FormSchema = {
+      ...schema,
+      id: crypto.randomUUID(),
+      createdAt: new Date()
+    }
+    await db.formSchemas.add(newSchema)
+    return newSchema.id
+  },
+
+  async save(schema: FormSchema): Promise<string> {
+    await db.formSchemas.put(schema)
+    return schema.id
+  },
+
+  async delete(id: string): Promise<void> {
+    await db.formSchemas.delete(id)
+  },
+
+  async deleteByDomain(domain: string): Promise<void> {
+    await db.formSchemas.where('domain').equals(domain).delete()
+  }
+}
+
+// ============================================================================
 // Settings Repository
 // ============================================================================
 
