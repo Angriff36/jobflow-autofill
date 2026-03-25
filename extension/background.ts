@@ -2,10 +2,8 @@
 
 // ============================================================================
 // JobFlow Autofill - Extension Background Service Worker
-// Handles extension lifecycle, messaging, and coordination
+// Handles extension lifecycle, messaging, and coordination with web app
 // ============================================================================
-
-import { FormSchemaRepository } from '../src/core/storage/db'
 
 // ============================================================================
 // Types
@@ -82,8 +80,6 @@ interface FormSchema {
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     console.log('JobFlow Autofill installed')
-    
-    // Open onboarding page
     chrome.tabs.create({
       url: chrome.runtime.getURL('popup.html?onboarding=true')
     })
@@ -108,38 +104,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleMessage(
   message: { type: string; payload?: unknown },
-  sender: chrome.runtime.MessageSender
+  _sender: chrome.runtime.MessageSender
 ): Promise<{ success: boolean; data?: unknown; error?: string }> {
   switch (message.type) {
     case 'GET_PROFILE':
       return getProfile()
-    
+
+    case 'SAVE_PROFILE':
+      return saveProfile(message.payload as Profile)
+
     case 'AUTOFILL':
       return autofill(message.payload as { fields: DetectedField[] })
-    
+
     case 'DETECT_FORM':
       return { success: true, data: { detected: true } }
-    
+
     case 'SAVE_FORM_SCHEMA':
       return saveFormSchema(message.payload as FormSchema)
-    
+
     case 'GET_FORM_SCHEMAS':
       return getFormSchemas(message.payload as { domain: string })
-    
+
     case 'LOG_APPLICATION':
       return logApplication(message.payload as {
         company: string
         position: string
         sourceUrl: string
       })
-    
+
     case 'SHOW_NOTIFICATION':
       return showNotification(message.payload as {
         title: string
         message: string
         type?: 'basic' | 'image' | 'list' | 'progress'
       })
-    
+
+    case 'CONTENT_SCRIPT_READY':
+    case 'FORM_DETECTED':
+      // Acknowledged - no action needed
+      return { success: true }
+
     default:
       return { success: false, error: `Unknown message type: ${message.type}` }
   }
@@ -152,12 +156,11 @@ async function handleMessage(
 async function getProfile(): Promise<{ success: boolean; data?: Profile; error?: string }> {
   try {
     const result = await chrome.storage.local.get('profile')
-    
+
     if (result.profile) {
       return { success: true, data: result.profile }
     }
-    
-    // Return empty profile template
+
     return {
       success: true,
       data: {
@@ -188,6 +191,20 @@ async function getProfile(): Promise<{ success: boolean; data?: Profile; error?:
   }
 }
 
+async function saveProfile(profile: Profile): Promise<{ success: boolean; error?: string }> {
+  try {
+    await chrome.storage.local.set({ profile })
+    // Broadcast profile update to any listening web app tabs
+    broadcastToWebApp({ type: 'PROFILE_UPDATED', payload: profile })
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save profile'
+    }
+  }
+}
+
 // ============================================================================
 // Autofill Operations
 // ============================================================================
@@ -195,14 +212,14 @@ async function getProfile(): Promise<{ success: boolean; data?: Profile; error?:
 async function autofill(payload: { fields: DetectedField[] }): Promise<{ success: boolean; filledCount?: number; error?: string }> {
   try {
     const profileResult = await getProfile()
-    
+
     if (!profileResult.success || !profileResult.data) {
       return { success: false, error: 'No profile found' }
     }
-    
+
     const profile = profileResult.data
     let filledCount = 0
-    
+
     for (const field of payload.fields) {
       if (field.suggestedMapping) {
         const value = getNestedValue(profile, field.suggestedMapping)
@@ -211,7 +228,7 @@ async function autofill(payload: { fields: DetectedField[] }): Promise<{ success
         }
       }
     }
-    
+
     return { success: true, filledCount }
   } catch (error) {
     return {
@@ -223,8 +240,8 @@ async function autofill(payload: { fields: DetectedField[] }): Promise<{ success
 
 function getNestedValue(obj: unknown, path: string): unknown {
   return path.split('.').reduce((current, key) => {
-    return current && typeof current === 'object' && key in current 
-      ? (current as Record<string, unknown>)[key] 
+    return current && typeof current === 'object' && key in current
+      ? (current as Record<string, unknown>)[key]
       : null
   }, obj)
 }
@@ -237,20 +254,18 @@ async function saveFormSchema(schema: FormSchema): Promise<{ success: boolean; e
   try {
     const result = await chrome.storage.local.get('formSchemas')
     const schemas: FormSchema[] = result.formSchemas || []
-    
-    // Check for existing schema for this domain
-    const existingIndex = schemas.findIndex(s => 
+
+    const existingIndex = schemas.findIndex(s =>
       s.domain === schema.domain && s.urlPattern === schema.urlPattern
     )
-    
+
     if (existingIndex >= 0) {
       schemas[existingIndex] = schema
     } else {
       schemas.push(schema)
     }
-    
+
     await chrome.storage.local.set({ formSchemas: schemas })
-    
     return { success: true }
   } catch (error) {
     return {
@@ -264,9 +279,7 @@ async function getFormSchemas(payload: { domain: string }): Promise<{ success: b
   try {
     const result = await chrome.storage.local.get('formSchemas')
     const schemas: FormSchema[] = result.formSchemas || []
-    
     const filtered = schemas.filter(s => s.domain === payload.domain)
-    
     return { success: true, data: filtered }
   } catch (error) {
     return {
@@ -299,7 +312,7 @@ async function logApplication(payload: {
   try {
     const result = await chrome.storage.local.get('applications')
     const applications: LoggedApplication[] = result.applications || []
-    
+
     const newApplication: LoggedApplication = {
       id: crypto.randomUUID(),
       company: payload.company,
@@ -310,16 +323,15 @@ async function logApplication(payload: {
       stage: 'applied',
       createdAt: new Date().toISOString()
     }
-    
+
     applications.unshift(newApplication)
     await chrome.storage.local.set({ applications })
-    
-    // Show notification
+
     showNotification({
       title: 'Application Logged',
       message: `${payload.company} - ${payload.position}`
     })
-    
+
     return { success: true, data: newApplication }
   } catch (error) {
     return {
@@ -345,7 +357,6 @@ async function showNotification(payload: {
       title: payload.title,
       message: payload.message
     })
-    
     return { success: true }
   } catch (error) {
     return {
@@ -359,40 +370,82 @@ async function showNotification(payload: {
 // Tab Update Listener - Auto-detect job application pages
 // ============================================================================
 
+const JOB_SITE_PATTERNS = [
+  'greenhouse.io',
+  'lever.co',
+  'workday.com',
+  'myworkdayjobs.com',
+  'indeed.com',
+  'linkedin.com/jobs',
+  'glassdoor.com',
+  'monster.com',
+  'ziprecruiter.com',
+  'smartrecruiters.com',
+  'jobvite.com',
+  'icims.com',
+  'taleo.net',
+  'brassring.com',
+  'careers',
+  '/apply',
+  '/application'
+]
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    const url = new URL(tab.url)
-    
-    // Check if this might be a job application page
-    const jobSitePatterns = [
-      'greenhouse.io',
-      'lever.co',
-      'workday.com',
-      'myworkdayjobs.com',
-      'indeed.com',
-      'linkedin.com/jobs',
-      'glassdoor.com',
-      'monster.com',
-      'ziprecruiter.com',
-      'smartrecruiters.com',
-      'jobvite.com',
-      'icims.com',
-      'taleo.net',
-      'brassring.com',
-      'careers',
-      '/apply',
-      '/application'
-    ]
-    
-    const isJobSite = jobSitePatterns.some(pattern => 
-      url.hostname.includes(pattern) || url.pathname.includes(pattern)
-    )
-    
-    if (isJobSite) {
-      // Update badge to indicate form detection is available
-      chrome.action.setBadgeText({ text: '✓', tabId })
-      chrome.action.setBadgeBackgroundColor({ color: '#10B981', tabId })
+    try {
+      const url = new URL(tab.url)
+      const isJobSite = JOB_SITE_PATTERNS.some(pattern =>
+        url.hostname.includes(pattern) || url.pathname.includes(pattern)
+      )
+
+      if (isJobSite) {
+        chrome.action.setBadgeText({ text: '!', tabId })
+        chrome.action.setBadgeBackgroundColor({ color: '#10B981', tabId })
+      }
+    } catch {
+      // Invalid URL, skip
     }
+  }
+})
+
+// ============================================================================
+// Web App Communication via BroadcastChannel
+// ============================================================================
+
+// Listen for messages from web app pages via external messaging
+chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) => {
+  handleMessage(message, sender)
+    .then(sendResponse)
+    .catch((error) => {
+      sendResponse({ success: false, error: error.message })
+    })
+  return true
+})
+
+// Broadcast messages to web app tabs that have the JobFlow dashboard open
+function broadcastToWebApp(message: { type: string; payload?: unknown }): void {
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      if (tab.id && tab.url) {
+        // Send to tabs that might have the web app open
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'WEBAPP_BROADCAST',
+          payload: message
+        }).catch(() => {
+          // Tab doesn't have content script, ignore
+        })
+      }
+    }
+  })
+}
+
+// Listen for profile changes in storage and sync to web app
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.profile) {
+    broadcastToWebApp({
+      type: 'PROFILE_UPDATED',
+      payload: changes.profile.newValue
+    })
   }
 })
 
