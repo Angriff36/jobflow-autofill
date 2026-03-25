@@ -82,7 +82,23 @@ function PopupApp() {
       }
 
       const result = await chrome.storage.local.get('profile')
-      setProfile(result.profile || null)
+      let loadedProfile = result.profile || null
+      
+      // If no profile in extension storage, try importing from web app via active tab
+      if (!loadedProfile) {
+        try {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+          if (tab?.id) {
+            const webProfile = await chrome.tabs.sendMessage(tab.id, { type: 'GET_LOCAL_PROFILE' }).catch(() => null)
+            if (webProfile?.data) {
+              loadedProfile = webProfile.data
+              // Save to extension storage for future use
+              await chrome.storage.local.set({ profile: loadedProfile })
+            }
+          }
+        } catch (_) { /* tab may not have content script */ }
+      }
+      setProfile(loadedProfile)
 
       // Load fill count for this month
       const fillResult = await chrome.runtime.sendMessage({ type: 'GET_FILL_COUNT' })

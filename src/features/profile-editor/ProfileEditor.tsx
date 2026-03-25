@@ -139,6 +139,19 @@ export function ProfileEditor() {
     setSaveStatus('saving')
     try {
       await profileRepository.save({ ...profile, updatedAt: new Date() })
+      
+      // Sync profile to extension via BroadcastChannel
+      try {
+        const channel = new BroadcastChannel('jobflow-sync')
+        channel.postMessage({ type: 'PROFILE_UPDATED', payload: profile })
+        channel.close()
+      } catch (_) { /* BroadcastChannel not available */ }
+
+      // Also write to localStorage as fallback for extension popup
+      try {
+        localStorage.setItem('jobflow_profile', JSON.stringify(profile))
+      } catch (_) { /* storage full */ }
+
       setSaveStatus('saved')
     } catch (error) {
       console.error('Failed to save profile:', error)

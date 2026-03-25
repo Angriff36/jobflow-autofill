@@ -913,6 +913,22 @@
         sendResponse({ success: true })
         break
 
+      case 'GET_LOCAL_PROFILE': {
+        // Read profile from web app's localStorage (same origin)
+        try {
+          const stored = localStorage.getItem('jobflow_profile')
+          if (stored) {
+            const profile = JSON.parse(stored)
+            sendResponse({ success: true, data: profile })
+          } else {
+            sendResponse({ success: false, error: 'No profile in localStorage' })
+          }
+        } catch {
+          sendResponse({ success: false, error: 'Failed to read localStorage' })
+        }
+        break
+      }
+
       case 'WEBAPP_BROADCAST':
         // Forward messages from background to the page via postMessage
         // This enables communication between extension and web app

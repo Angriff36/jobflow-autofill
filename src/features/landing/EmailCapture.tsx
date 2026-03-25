@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Mail, CheckCircle, Loader2 } from 'lucide-react'
-import { supabase, supabaseConfigured } from '../../core/storage/supabase'
+
+// Uses Formspree (free tier: 50 submissions/mo) — replace ID with your own at formspree.io
+const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID || ''
 
 export function EmailCapture() {
   const [email, setEmail] = useState('')
@@ -16,57 +18,31 @@ export function EmailCapture() {
     setErrorMessage('')
 
     try {
-      if (supabaseConfigured) {
-        const { data, error } = await supabase
-          .from('waitlist')
-          .insert({ email: email.trim() })
-          .select('id')
-          .single()
-
-        if (error) {
-          if (error.code === '23505') {
-            setErrorMessage('This email is already on the waitlist!')
-            setStatus('error')
-            return
-          }
-          throw error
-        }
-
-        const { count } = await supabase
-          .from('waitlist')
-          .select('*', { count: 'exact', head: true })
-
-        setWaitlistNumber(count || 1)
-        if (data) {
-          setStatus('success')
-        }
-      } else {
-        // localStorage fallback
-        const stored = JSON.parse(localStorage.getItem('jobflow_waitlist') || '[]') as string[]
-        if (stored.includes(email.trim())) {
-          setErrorMessage('This email is already on the waitlist!')
-          setStatus('error')
-          return
-        }
-        stored.push(email.trim())
-        localStorage.setItem('jobflow_waitlist', JSON.stringify(stored))
-        setWaitlistNumber(stored.length)
-        setStatus('success')
-      }
-    } catch {
-      // Final fallback to localStorage
-      try {
-        const stored = JSON.parse(localStorage.getItem('jobflow_waitlist') || '[]') as string[]
-        if (!stored.includes(email.trim())) {
-          stored.push(email.trim())
-          localStorage.setItem('jobflow_waitlist', JSON.stringify(stored))
-        }
-        setWaitlistNumber(stored.length)
-        setStatus('success')
-      } catch {
-        setErrorMessage('Something went wrong. Please try again.')
+      // Track locally for dedup
+      const stored = JSON.parse(localStorage.getItem('jobflow_waitlist') || '[]') as string[]
+      if (stored.includes(email.trim())) {
+        setErrorMessage('This email is already on the waitlist!')
         setStatus('error')
+        return
       }
+
+      // Send to Formspree if configured
+      if (FORMSPREE_ID) {
+        const resp = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), _subject: 'JobFlow Waitlist Signup' }),
+        })
+        if (!resp.ok) throw new Error('Form submission failed')
+      }
+
+      stored.push(email.trim())
+      localStorage.setItem('jobflow_waitlist', JSON.stringify(stored))
+      setWaitlistNumber(stored.length)
+      setStatus('success')
+    } catch {
+      setErrorMessage('Something went wrong. Please try again.')
+      setStatus('error')
     }
   }
 

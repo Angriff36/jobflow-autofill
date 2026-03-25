@@ -24,20 +24,22 @@ function Hero() {
         </h1>
         <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
           JobFlow Autofill saves your profile once and fills out job applications across
-          Greenhouse, Lever, Workable, and more — in seconds.
+          Greenhouse, Lever, and any site with standard form fields — in seconds.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
-            href="#early-access"
+            href="https://github.com/Angriff36/jobflow-autofill/releases"
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors text-lg"
           >
-            Get Early Access
+            Download Extension (Free)
           </a>
           <Link
-            to="/auth"
+            to="/app/dashboard"
             className="px-8 py-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition-colors text-lg border border-blue-400"
           >
-            Sign In
+            Open Dashboard
           </Link>
         </div>
       </div>
@@ -107,10 +109,7 @@ function Features() {
 const platforms = [
   'Greenhouse',
   'Lever',
-  'Workable',
-  'Ashby',
-  'SmartRecruiters',
-  'iCIMS',
+  'Standard HTML Forms',
 ]
 
 function SupportedPlatforms() {
@@ -267,7 +266,7 @@ const faqs = [
   },
   {
     q: 'What job sites do you support?',
-    a: 'JobFlow works with all major applicant tracking systems including Greenhouse, Lever, Workable, Ashby, SmartRecruiters, and iCIMS. It also supports many company career pages and job boards with standard form layouts.',
+    a: 'JobFlow is verified on Greenhouse and Lever, which together power most tech job applications. It also works on any site with standard HTML form fields (name, email, phone, etc). We are actively adding support for more platforms.',
   },
   {
     q: 'Does it auto-submit applications?',

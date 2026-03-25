@@ -1,97 +1,79 @@
 import { useEffect, useState } from 'react'
 import { PLANS, FREE_FILL_LIMIT, type PlanId } from '../../core/payments/plans'
 import { getUsageCount, getCurrentPlan } from '../../core/payments/usage'
-import { createCheckoutSession, getStripe, STRIPE_PRICE_IDS } from '../../core/payments/stripe'
+
+// Stripe Payment Link — replace with real link once Stripe account is set up
+const STRIPE_PAYMENT_LINK = import.meta.env.VITE_STRIPE_PAYMENT_LINK || ''
 
 export function UpgradePage() {
   const [usageCount, setUsageCount] = useState(0)
   const [currentPlan, setCurrentPlan] = useState<PlanId>('free')
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     getUsageCount().then(setUsageCount)
     getCurrentPlan().then(setCurrentPlan)
   }, [])
 
-  async function handleUpgrade() {
-    setLoading(true)
-    try {
-      const { sessionId } = await createCheckoutSession(STRIPE_PRICE_IDS.pro_monthly)
-      const stripe = await getStripe()
-      if (stripe && typeof stripe === 'object' && 'redirectToCheckout' in stripe) {
-        await (stripe as { redirectToCheckout: (opts: { sessionId: string }) => Promise<unknown> })
-          .redirectToCheckout({ sessionId })
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
-    } finally {
-      setLoading(false)
+  function handleUpgrade() {
+    if (STRIPE_PAYMENT_LINK) {
+      window.open(STRIPE_PAYMENT_LINK, '_blank')
+    } else {
+      // Payment not configured yet — show email
+      window.location.href = 'mailto:support@jobflow.app?subject=Upgrade%20to%20Pro'
     }
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      <h1>Upgrade Your Plan</h1>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Upgrade Your Plan</h1>
 
       {currentPlan === 'free' && (
-        <div style={{
-          background: '#fef3c7',
-          border: '1px solid #f59e0b',
-          borderRadius: 8,
-          padding: 16,
-          marginBottom: 24,
-        }}>
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-6">
           <strong>{usageCount}/{FREE_FILL_LIMIT} free fills used this month</strong>
+          <p className="text-sm text-amber-700 mt-1">Resets on the 1st of each month</p>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      {currentPlan === 'pro' && (
+        <div className="bg-green-50 border border-green-300 rounded-lg p-4 mb-6">
+          <strong>✓ You're on the Pro plan</strong>
+          <p className="text-sm text-green-700 mt-1">Unlimited autofills, all features unlocked</p>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-6">
         {Object.values(PLANS).map((plan) => (
           <div
             key={plan.id}
-            style={{
-              border: currentPlan === plan.id ? '2px solid #10B981' : '1px solid #e5e7eb',
-              borderRadius: 12,
-              padding: 24,
-            }}
+            className={`border-2 rounded-xl p-6 ${
+              currentPlan === plan.id ? 'border-green-500 bg-green-50' : 'border-gray-200'
+            }`}
           >
-            <h2>{plan.name}</h2>
-            <p style={{ fontSize: 32, fontWeight: 'bold', margin: '8px 0' }}>
+            <h2 className="text-xl font-bold">{plan.name}</h2>
+            <p className="text-3xl font-bold my-3">
               {plan.price === 0 ? 'Free' : `$${plan.price}/mo`}
             </p>
-            <p style={{ color: '#6b7280', marginBottom: 16 }}>
-              {plan.fillsPerMonth === null ? 'Unlimited fills' : `${plan.fillsPerMonth} fills/month`}
-            </p>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {plan.features.map((feature) => (
-                <li key={feature} style={{ padding: '4px 0' }}>
-                  ✓ {feature}
+            <ul className="space-y-2 mb-6">
+              {plan.features.map((f, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm">
+                  <span className="text-green-600 mt-0.5">✓</span>
+                  {f}
                 </li>
               ))}
             </ul>
             {plan.id === 'pro' && currentPlan === 'free' && (
               <button
                 onClick={handleUpgrade}
-                disabled={loading}
-                style={{
-                  marginTop: 16,
-                  width: '100%',
-                  padding: '12px 24px',
-                  background: '#10B981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontSize: 16,
-                  cursor: loading ? 'wait' : 'pointer',
-                }}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
               >
-                {loading ? 'Loading...' : 'Upgrade to Pro'}
+                Upgrade to Pro
               </button>
             )}
-            {currentPlan === plan.id && (
-              <p style={{ marginTop: 16, textAlign: 'center', color: '#10B981', fontWeight: 'bold' }}>
-                Current Plan
-              </p>
+            {plan.id === 'free' && currentPlan === 'free' && (
+              <div className="text-center text-sm text-gray-500 py-3">Current plan</div>
+            )}
+            {currentPlan === 'pro' && plan.id === 'pro' && (
+              <div className="text-center text-sm text-green-600 py-3 font-medium">Active ✓</div>
             )}
           </div>
         ))}

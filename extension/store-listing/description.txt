@@ -24,10 +24,10 @@ JobFlow Autofill works across all major applicant tracking systems used by emplo
 
 ✅ Greenhouse — Used by thousands of tech companies, startups, and enterprises
 ✅ Lever — Popular with fast-growing companies and mid-size organizations
-✅ Workable — Widely adopted by SMBs and international companies
-✅ Ashby — Modern ATS used by scaling startups and tech companies
-✅ SmartRecruiters — Enterprise-grade hiring platform used globally
-✅ iCIMS — One of the largest ATS platforms, common in Fortune 500 companies
+✅  — Widely adopted by SMBs and international companies
+✅  — Modern ATS used by scaling startups and tech companies
+✅  — Enterprise-grade hiring platform used globally
+✅  — One of the largest ATS platforms, common in Fortune 500 companies
 
 Plus support for company career pages, job boards, and custom application forms. JobFlow's intelligent field detection adapts to different form layouts and structures.
 
@@ -101,7 +101,7 @@ Q: Is my data safe?
 A: Yes. JobFlow stores your data locally on your device by default. No data is sent to any server unless you explicitly enable cloud sync.
 
 Q: Does it work with LinkedIn Easy Apply?
-A: JobFlow works best with full application forms on ATS platforms like Greenhouse, Lever, Workable, Ashby, SmartRecruiters, and iCIMS. LinkedIn Easy Apply uses a simplified flow that doesn't always expose standard form fields.
+A: JobFlow works best with full application forms on ATS platforms like Greenhouse, Lever, , and . LinkedIn Easy Apply uses a simplified flow that doesn't always expose standard form fields.
 
 Q: Can I use it on multiple computers?
 A: Yes — enable optional cloud sync to keep your profile and application history in sync across devices.
@@ -116,4 +116,4 @@ A: You can always edit any field after autofill. JobFlow also lets you configure
 
 Stop wasting hours on repetitive data entry. Install JobFlow Autofill and apply to jobs the smart way.
 
-Keywords: job application autofill, auto fill job forms, job search automation, application tracker, Greenhouse autofill, Lever autofill, Workable autofill, resume autofill, job application helper, ATS form filler, career tools, job hunting tools, application management, job search productivity
+Keywords: job application autofill, auto fill job forms, job search automation, application tracker, Greenhouse autofill, Lever autofill,  autofill, resume autofill, job application helper, ATS form filler, career tools, job hunting tools, application management, job search productivity
