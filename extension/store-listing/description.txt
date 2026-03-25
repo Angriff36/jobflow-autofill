@@ -1,0 +1,119 @@
+JobFlow Autofill — Stop Re-Typing, Start Applying
+
+Tired of filling out the same job application forms over and over? JobFlow Autofill is a Chrome extension that saves your profile once and auto-fills job applications across all major applicant tracking systems. Apply faster, track smarter, and keep your data private.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 WHAT IT DOES
+
+JobFlow Autofill detects job application forms on the websites you visit and fills them in with your saved profile data — instantly. No more typing your name, email, phone number, work history, and education into every single application. Save your information once, apply everywhere.
+
+The extension automatically recognizes form fields including:
+• Personal information (name, email, phone, address)
+• Work experience (company, title, dates, descriptions)
+• Education (school, degree, field of study, graduation date)
+• Skills and certifications
+• LinkedIn URL, portfolio, and website links
+• Common screening questions (work authorization, salary expectations, start date)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 SUPPORTED JOB SITES & ATS PLATFORMS
+
+JobFlow Autofill works across all major applicant tracking systems used by employers:
+
+✅ Greenhouse — Used by thousands of tech companies, startups, and enterprises
+✅ Lever — Popular with fast-growing companies and mid-size organizations
+✅ Workable — Widely adopted by SMBs and international companies
+✅ Ashby — Modern ATS used by scaling startups and tech companies
+✅ SmartRecruiters — Enterprise-grade hiring platform used globally
+✅ iCIMS — One of the largest ATS platforms, common in Fortune 500 companies
+
+Plus support for company career pages, job boards, and custom application forms. JobFlow's intelligent field detection adapts to different form layouts and structures.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 KEY FEATURES
+
+⚡ One-Click Autofill
+Land on a job application, click the JobFlow icon, and watch your information fill in automatically. What used to take 15-20 minutes now takes seconds.
+
+📋 Smart Field Detection
+JobFlow uses intelligent pattern matching to identify form fields correctly — even on forms it has never seen before. Your phone number goes in the phone field, not the address field.
+
+📊 Built-In Application Tracker
+Every application you submit is automatically logged. View all your applications in a clean Kanban board, track pipeline stages (Applied → Interviewing → Offer), and never lose track of where you've applied.
+
+🔔 Follow-Up Reminders
+Set reminders to follow up with companies after applying. JobFlow notifies you when it's time to send that follow-up email, so opportunities don't slip through the cracks.
+
+👤 Complete Profile Management
+Store your full professional profile — work history, education, skills, certifications, and custom answers to common screening questions. Edit anytime, and your updates apply to all future applications.
+
+📱 Optional Cloud Sync
+Want to use JobFlow across multiple devices? Enable cloud sync to keep your profile and application history in sync. Prefer to stay local? That works too — sync is entirely optional.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 PRIVACY & SECURITY — YOUR DATA STAYS YOURS
+
+JobFlow is built local-first. Your personal information — name, address, work history, salary expectations — is stored on YOUR device, not on our servers.
+
+🔒 Local-first architecture: Profile data is stored in your browser's local storage
+🔒 No server required: The extension works completely offline, no account needed
+🔒 Optional sync: Cloud sync is opt-in only, and you can delete your cloud data anytime
+🔒 No data selling: We never sell, share, or monetize your personal information
+🔒 Open approach: Your data is yours. Export it, delete it, or move it anytime
+
+Unlike other autofill tools that upload your resume and personal data to third-party servers, JobFlow keeps everything on your machine by default. You are always in control.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 WHO IS JOBFLOW FOR?
+
+• Active job seekers applying to 10+ jobs per day
+• Career changers managing applications across multiple industries
+• Recent graduates entering the job market for the first time
+• Recruiters and career coaches helping clients with applications
+• Anyone tired of typing the same information into forms repeatedly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 FREE TO USE
+
+JobFlow Autofill is free for core features including autofill, form detection, and basic application tracking. A Pro plan is available for power users who want advanced analytics, unlimited application history, and priority support.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 HOW TO GET STARTED
+
+1. Install the JobFlow Autofill extension
+2. Click the extension icon and fill in your profile (takes ~5 minutes)
+3. Navigate to any job application
+4. Click "Autofill" and watch the magic happen
+5. Your application is automatically tracked in your dashboard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔹 FREQUENTLY ASKED QUESTIONS
+
+Q: Is my data safe?
+A: Yes. JobFlow stores your data locally on your device by default. No data is sent to any server unless you explicitly enable cloud sync.
+
+Q: Does it work with LinkedIn Easy Apply?
+A: JobFlow works best with full application forms on ATS platforms like Greenhouse, Lever, Workable, Ashby, SmartRecruiters, and iCIMS. LinkedIn Easy Apply uses a simplified flow that doesn't always expose standard form fields.
+
+Q: Can I use it on multiple computers?
+A: Yes — enable optional cloud sync to keep your profile and application history in sync across devices.
+
+Q: Does it auto-submit applications?
+A: No. JobFlow fills in your information but never submits an application without your review and approval. You always have the final say.
+
+Q: What if a form field is filled incorrectly?
+A: You can always edit any field after autofill. JobFlow also lets you configure field mappings for specific sites.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Stop wasting hours on repetitive data entry. Install JobFlow Autofill and apply to jobs the smart way.
+
+Keywords: job application autofill, auto fill job forms, job search automation, application tracker, Greenhouse autofill, Lever autofill, Workable autofill, resume autofill, job application helper, ATS form filler, career tools, job hunting tools, application management, job search productivity
