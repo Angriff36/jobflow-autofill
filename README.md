@@ -1,18 +1,17 @@
-# JobFlow Autofill
+# JobFlow - Auto-fill Job Applications
 
-JobFlow Autofill is a job application assistant that stores a user's job-related profile data locally and uses it to auto-complete online job applications, track submitted applications, monitor stages, and remind users when to follow up. It combines form autofill, application tracking, and follow-up workflow management in one product.
+Stop spending hours filling out the same information on every job application. JobFlow saves your profile once and auto-fills job application forms across the web, tracks your applications through every stage, and reminds you when to follow up.
 
-## Client
-- Name: Ryan Cort
-- Email: ryan@cort.dev
-- Timeline: Within 1 month
-- Budget: Under $5,000
-
-## Platforms
-Web, Browser Extension
+<!-- ![JobFlow Dashboard](docs/screenshots/dashboard.png) -->
+<!-- ![JobFlow Autofill](docs/screenshots/autofill.png) -->
 
 ## Features
-User Auth, Notifications
+
+- **One-Click Autofill** — Browser extension detects job application forms and fills them with your saved profile
+- **Application Tracker** — Kanban board to track applications through Applied, Interviewing, Offer, and more
+- **Follow-Up Reminders** — Never miss a follow-up with smart reminder scheduling
+- **Local-First Storage** — Your data stays on your device by default, with optional cloud sync
+- **Privacy-Focused** — Sensitive PII never leaves your browser unless you opt in
 
 ## Tech Stack
 
@@ -21,106 +20,80 @@ User Auth, Notifications
 | Web Framework | React 18 + TypeScript |
 | Build Tool | Vite |
 | State Management | Zustand |
-| Storage | Dexie.js (IndexedDB) |
-| UI Components | Tailwind CSS + Radix UI |
-| Browser Extension | Chrome Extension API |
-
-## Project Structure
-
-```
-jobflow-autofill/
-├── src/                      # React web application
-│   ├── components/           # Reusable UI components
-│   ├── core/
-│   │   ├── storage/          # IndexedDB with Dexie.js
-│   │   └── types/            # TypeScript type definitions
-│   ├── features/
-│   │   ├── dashboard/        # Main dashboard view
-│   │   ├── profile-editor/   # Profile management UI
-│   │   ├── applications/     # Application tracking
-│   │   └── settings/         # App settings
-│   ├── App.tsx
-│   └── main.tsx
-│
-├── extension/                # Browser extension
-│   ├── manifest.json         # Extension manifest (v3)
-│   ├── background.js         # Service worker
-│   ├── content.js            # Form detection & autofill
-│   ├── popup.html/js         # Extension popup UI
-│   └── icons/                # Extension icons
-│
-├── ARCHITECTURE.md           # System architecture document
-└── package.json
-```
+| Local Storage | Dexie.js (IndexedDB) |
+| Cloud Sync | Supabase (optional) |
+| UI | Tailwind CSS + Radix UI |
+| Browser Extension | Chrome Extension Manifest V3 |
+| Payments | Stripe |
 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - npm 9+
 
-### Install Dependencies
+### Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-org/jobflow-autofill.git
+cd jobflow-autofill
+
+# Install dependencies
 npm install
-```
 
-### Development
+# Copy environment variables
+cp .env.example .env
 
-```bash
-# Start development server
+# Start the development server
 npm run dev
 ```
+
+The app will be available at `http://localhost:5173`.
 
 ### Build
 
 ```bash
-# Build for production
+# Build web app
 npm run build
+
+# Build browser extension
+npm run build:extension
+
+# Build both
+npm run build:all
 ```
 
-### Type Check
+## Browser Extension (Dev Mode)
 
-```bash
-# Run TypeScript type checking
-npm run type-check
+1. Run `npm run build:extension`
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable **Developer mode** (top right toggle)
+4. Click **Load unpacked**
+5. Select the `dist/extension` folder
+6. Navigate to a job application page and click the JobFlow icon
+
+## Project Structure
+
+```
+├── src/                    # React web application
+│   ├── components/         # Shared UI components
+│   ├── core/               # Storage, types, utilities
+│   └── features/           # Feature modules (dashboard, profile, applications)
+├── extension/              # Chrome extension source
+├── supabase/               # Database migrations and config
+├── scripts/                # Build scripts
+└── dist/                   # Build output (web + extension)
 ```
 
-## Browser Extension
+## Contributing
 
-To load the extension in Chrome/Chromium:
-
-1. Build the project: `npm run build`
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" (top right)
-4. Click "Load unpacked"
-5. Select the `extension` folder from the project directory
-
-## Data Models
-
-### User Profile
-- Personal information (name, email, phone, location)
-- Work experience history
-- Education history
-- Skills
-- Documents (resumes, cover letters)
-- Saved answers to common questions
-
-### Job Application
-- Company & position
-- Source (LinkedIn, Indeed, etc.)
-- Application date
-- Pipeline stage (Applied, Interviewing, Offer, Rejected, Closed)
-- Follow-up reminders
-- Notes & contacts
-
-## Architecture Highlights
-
-- **Local-First**: All data stored in IndexedDB, never sent to servers
-- **Extension ↔ Web Sync**: Uses Broadcast Channel API for cross-context communication
-- **Form Detection**: Pattern-based field matching + heuristic analysis
-- **Privacy-Focused**: Sensitive PII stays on user's device
+1. Create a feature branch from `main`
+2. Make your changes
+3. Run `npm run type-check` and `npm test` before committing
+4. Open a pull request
 
 ## License
 
-Private - All rights reserved
+Private — All rights reserved
