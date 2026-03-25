@@ -3,6 +3,7 @@ import { Dashboard } from './features/dashboard/Dashboard'
 import { ProfileEditor } from './features/profile-editor/ProfileEditor'
 import { Applications } from './features/applications/Applications'
 import { Settings } from './features/settings/Settings'
+import { UpgradePage } from './features/upgrade/UpgradePage'
 import { Layout } from './components/Layout'
 import { AuthProvider } from './features/auth/AuthProvider'
 import { NotificationsProvider } from './features/notifications'
@@ -28,6 +29,7 @@ function App() {
               <Route path="profile" element={<ProfileEditor />} />
               <Route path="applications" element={<Applications />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="upgrade" element={<UpgradePage />} />
             </Route>
           </Routes>
         </NotificationsProvider>
