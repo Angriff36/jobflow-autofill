@@ -1,34 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { applicationRepository } from '@/core/storage/db'
 import type { JobApplication, PipelineStage } from '@/core/types'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
-import { format } from 'date-fns'
+import { Plus, Search, List, Columns, X } from 'lucide-react'
+import { KanbanBoard } from './KanbanBoard'
+import { ApplicationDetailModal } from './ApplicationDetailModal'
+import { QuickAddForm } from './QuickAddForm'
+import { ApplicationListView } from './ApplicationListView'
 
-const stageConfig: Record<PipelineStage, { label: string; color: string }> = {
-  applied: { label: 'Applied', color: 'bg-blue-100 text-blue-800' },
-  interviewing: { label: 'Interviewing', color: 'bg-yellow-100 text-yellow-800' },
-  offer: { label: 'Offer', color: 'bg-green-100 text-green-800' },
-  rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800' },
-  closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800' },
+export const STAGES: PipelineStage[] = ['applied', 'interviewing', 'offer', 'rejected', 'closed']
+
+export const stageConfig: Record<PipelineStage, { label: string; color: string; bg: string }> = {
+  applied: { label: 'Applied', color: 'text-blue-700', bg: 'bg-blue-100 text-blue-800' },
+  interviewing: { label: 'Interviewing', color: 'text-amber-700', bg: 'bg-amber-100 text-amber-800' },
+  offer: { label: 'Offer', color: 'text-emerald-700', bg: 'bg-emerald-100 text-emerald-800' },
+  rejected: { label: 'Rejected', color: 'text-red-700', bg: 'bg-red-100 text-red-800' },
+  closed: { label: 'Closed', color: 'text-gray-700', bg: 'bg-gray-100 text-gray-800' },
 }
 
-const emptyApplication = (): Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'> => ({
-  company: '',
-  position: '',
-  source: '',
-  sourceUrl: '',
-  appliedDate: format(new Date(), 'yyyy-MM-dd'),
-  status: 'active',
-  stage: 'applied',
-  notes: '',
-  contacts: []
-})
+export type SortField = 'company' | 'appliedDate' | 'stage' | 'position'
+export type SortDirection = 'asc' | 'desc'
 
 export function Applications() {
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [newApp, setNewApp] = useState<Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>>(emptyApplication())
+  const [view, setView] = useState<'list' | 'kanban'>('list')
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStage, setFilterStage] = useState<PipelineStage | ''>('')
+  const [filterSource, setFilterSource] = useState('')
+  const [sortField, setSortField] = useState<SortField>('appliedDate')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   useEffect(() => {
     loadApplications()
@@ -45,11 +47,10 @@ export function Applications() {
     }
   }
 
-  async function handleCreate() {
+  async function handleCreate(appData: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>) {
     try {
-      await applicationRepository.create(newApp)
-      setNewApp(emptyApplication())
-      setShowForm(false)
+      await applicationRepository.create(appData)
+      setShowQuickAdd(false)
       loadApplications()
     } catch (error) {
       console.error('Failed to create application:', error)
@@ -60,6 +61,7 @@ export function Applications() {
     if (!confirm('Delete this application?')) return
     try {
       await applicationRepository.delete(id)
+      if (selectedApp?.id === id) setSelectedApp(null)
       loadApplications()
     } catch (error) {
       console.error('Failed to delete application:', error)
@@ -70,160 +72,254 @@ export function Applications() {
     try {
       await applicationRepository.updateStage(id, stage)
       loadApplications()
+      if (selectedApp?.id === id) {
+        setSelectedApp(prev => prev ? { ...prev, stage } : null)
+      }
     } catch (error) {
       console.error('Failed to update stage:', error)
     }
   }
 
+  async function handleUpdate(id: string, updates: Partial<JobApplication>) {
+    try {
+      const app = await applicationRepository.getById(id)
+      if (!app) return
+      await applicationRepository.save({ ...app, ...updates })
+      loadApplications()
+      if (selectedApp?.id === id) {
+        setSelectedApp(prev => prev ? { ...prev, ...updates } : null)
+      }
+    } catch (error) {
+      console.error('Failed to update application:', error)
+    }
+  }
+
+  // Get unique sources for filter dropdown
+  const sources = useMemo(() => {
+    const s = new Set(applications.map(a => a.source).filter(Boolean))
+    return Array.from(s).sort()
+  }, [applications])
+
+  // Filter and sort
+  const filteredApps = useMemo(() => {
+    let result = [...applications]
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(a =>
+        a.company.toLowerCase().includes(q) ||
+        a.position.toLowerCase().includes(q) ||
+        a.notes?.toLowerCase().includes(q)
+      )
+    }
+    if (filterStage) {
+      result = result.filter(a => a.stage === filterStage)
+    }
+    if (filterSource) {
+      result = result.filter(a => a.source === filterSource)
+    }
+
+    result.sort((a, b) => {
+      let cmp = 0
+      switch (sortField) {
+        case 'company':
+          cmp = a.company.localeCompare(b.company)
+          break
+        case 'position':
+          cmp = a.position.localeCompare(b.position)
+          break
+        case 'appliedDate':
+          cmp = a.appliedDate.localeCompare(b.appliedDate)
+          break
+        case 'stage':
+          cmp = STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage)
+          break
+      }
+      return sortDirection === 'asc' ? cmp : -cmp
+    })
+
+    return result
+  }, [applications, searchQuery, filterStage, filterSource, sortField, sortDirection])
+
+  // Stats
+  const stats = useMemo(() => {
+    const active = applications.filter(a => a.status === 'active')
+    const byStage: Record<PipelineStage, number> = {
+      applied: 0, interviewing: 0, offer: 0, rejected: 0, closed: 0
+    }
+    active.forEach(a => { byStage[a.stage]++ })
+
+    const total = active.length
+    const responded = byStage.interviewing + byStage.offer + byStage.rejected + byStage.closed
+    const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0
+
+    return { total, byStage, responseRate }
+  }, [applications])
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDirection(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
   if (loading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Applications</h2>
+      {/* Header with stats */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Applications</h2>
+          <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+            <span>{stats.total} active</span>
+            <span className="text-gray-300">|</span>
+            <span>{stats.responseRate}% response rate</span>
+            {STAGES.filter(s => s !== 'closed').map(stage => (
+              <span key={stage} className="hidden md:inline">
+                <span className={stageConfig[stage].color}>{stats.byStage[stage]}</span>
+                {' '}{stageConfig[stage].label.toLowerCase()}
+              </span>
+            ))}
+          </div>
+        </div>
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          onClick={() => setShowQuickAdd(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Add Application
         </button>
       </div>
 
-      {/* New Application Form */}
-      {showForm && (
-        <div className="p-6 bg-card rounded-lg border">
-          <h3 className="text-xl font-semibold mb-4">New Application</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Company</label>
-              <input
-                type="text"
-                value={newApp.company}
-                onChange={(e) => setNewApp({ ...newApp, company: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Position</label>
-              <input
-                type="text"
-                value={newApp.position}
-                onChange={(e) => setNewApp({ ...newApp, position: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Source</label>
-              <input
-                type="text"
-                value={newApp.source}
-                onChange={(e) => setNewApp({ ...newApp, source: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder="LinkedIn, Indeed, Company site..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Source URL</label>
-              <input
-                type="url"
-                value={newApp.sourceUrl || ''}
-                onChange={(e) => setNewApp({ ...newApp, sourceUrl: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Applied Date</label>
-              <input
-                type="date"
-                value={newApp.appliedDate}
-                onChange={(e) => setNewApp({ ...newApp, appliedDate: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Stage</label>
-              <select
-                value={newApp.stage}
-                onChange={(e) => setNewApp({ ...newApp, stage: e.target.value as PipelineStage })}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                {Object.entries(stageConfig).map(([value, { label }]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Notes</label>
-              <textarea
-                value={newApp.notes}
-                onChange={(e) => setNewApp({ ...newApp, notes: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md h-24"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
+      {/* Filters & View Toggle */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search company, position, notes..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          {searchQuery && (
             <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
             >
-              Create
+              <X className="w-3 h-3 text-gray-400" />
             </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 border rounded-md hover:bg-muted"
-            >
-              Cancel
-            </button>
-          </div>
+          )}
         </div>
+
+        {/* Stage Filter */}
+        <select
+          value={filterStage}
+          onChange={e => setFilterStage(e.target.value as PipelineStage | '')}
+          className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Stages</option>
+          {STAGES.map(s => (
+            <option key={s} value={s}>{stageConfig[s].label}</option>
+          ))}
+        </select>
+
+        {/* Source Filter */}
+        {sources.length > 0 && (
+          <select
+            value={filterSource}
+            onChange={e => setFilterSource(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Sources</option>
+            {sources.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        )}
+
+        {/* View Toggle */}
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden ml-auto">
+          <button
+            onClick={() => setView('list')}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm ${
+              view === 'list' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            List
+          </button>
+          <button
+            onClick={() => setView('kanban')}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm border-l border-gray-200 ${
+              view === 'kanban' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Columns className="w-4 h-4" />
+            Kanban
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {applications.length === 0 ? (
+        <div className="py-16 text-center">
+          <Columns className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
+          <p className="text-sm text-gray-500 mb-4">Start tracking your job applications to stay organized.</p>
+          <button
+            onClick={() => setShowQuickAdd(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add Your First Application
+          </button>
+        </div>
+      ) : view === 'list' ? (
+        <ApplicationListView
+          applications={filteredApps}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onToggleSort={toggleSort}
+          onSelect={setSelectedApp}
+          onStageChange={handleStageChange}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <KanbanBoard
+          applications={filteredApps}
+          onStageChange={handleStageChange}
+          onSelect={setSelectedApp}
+        />
       )}
 
-      {/* Applications List */}
-      {applications.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
-          No applications yet. Click "Add Application" to get started.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {applications.map((app) => (
-            <div
-              key={app.id}
-              className="p-4 bg-card rounded-lg border flex items-center gap-4"
-            >
-              <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold truncate">{app.company}</h4>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${stageConfig[app.stage].color}`}>
-                    {stageConfig[app.stage].label}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground truncate">{app.position}</p>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {format(new Date(app.appliedDate), 'MMM d, yyyy')}
-              </div>
-              <select
-                value={app.stage}
-                onChange={(e) => handleStageChange(app.id, e.target.value as PipelineStage)}
-                className="px-2 py-1 border rounded-md text-sm"
-              >
-                {Object.entries(stageConfig).map(([value, { label }]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => handleDelete(app.id)}
-                className="p-2 text-destructive hover:bg-destructive/10 rounded-md"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
+      {/* Quick Add Modal */}
+      {showQuickAdd && (
+        <QuickAddForm
+          onSubmit={handleCreate}
+          onClose={() => setShowQuickAdd(false)}
+        />
+      )}
+
+      {/* Detail Modal */}
+      {selectedApp && (
+        <ApplicationDetailModal
+          application={selectedApp}
+          onClose={() => setSelectedApp(null)}
+          onUpdate={(updates) => handleUpdate(selectedApp.id, updates)}
+          onStageChange={(stage) => handleStageChange(selectedApp.id, stage)}
+          onDelete={() => handleDelete(selectedApp.id)}
+        />
       )}
     </div>
   )
