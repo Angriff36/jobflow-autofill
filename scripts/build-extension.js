@@ -83,6 +83,10 @@ async function buildExtension() {
   if (fs.existsSync(dashboardSrc)) {
     fs.copyFileSync(dashboardSrc, path.join(DIST_DIR, 'dashboard.html'))
   }
+  const dashboardJsSrc = path.join(EXTENSION_DIR, 'dashboard.js')
+  if (fs.existsSync(dashboardJsSrc)) {
+    fs.copyFileSync(dashboardJsSrc, path.join(DIST_DIR, 'dashboard.js'))
+  }
 
   // Copy icons
   const iconsDir = path.join(DIST_DIR, 'icons')
