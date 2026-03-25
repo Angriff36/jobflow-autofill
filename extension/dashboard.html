@@ -3,20 +3,181 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobFlow Dashboard</title>
+  <title>JobFlow — Profile Setup</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; }
+    .container { max-width: 640px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; color: #2563eb; }
+    .subtitle { color: #64748b; margin-bottom: 24px; }
+    h2 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+    h2:first-of-type { border-top: none; padding-top: 0; }
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+    .field { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+    input:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .btn { padding: 10px 24px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .actions { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
+    .status { font-size: 13px; color: #16a34a; font-weight: 500; }
+    .status.error { color: #dc2626; }
+    .card { background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div class="container">
+    <h1>JobFlow Autofill</h1>
+    <p class="subtitle">Fill in your profile below. This data is stored locally in your browser and used to auto-fill job applications.</p>
+
+    <div class="card">
+      <h2>Personal Information</h2>
+      <div class="row">
+        <div class="field"><label>First Name *</label><input id="firstName" placeholder="Jane"></div>
+        <div class="field"><label>Last Name *</label><input id="lastName" placeholder="Doe"></div>
+      </div>
+      <div class="field"><label>Email *</label><input id="email" type="email" placeholder="jane@example.com"></div>
+      <div class="field"><label>Phone</label><input id="phone" type="tel" placeholder="(555) 123-4567"></div>
+
+      <h2>Address</h2>
+      <div class="field"><label>Street Address</label><input id="address" placeholder="123 Main St"></div>
+      <div class="row">
+        <div class="field"><label>City</label><input id="city" placeholder="Austin"></div>
+        <div class="field"><label>State</label><input id="state" placeholder="TX"></div>
+        <div class="field"><label>ZIP</label><input id="zip" placeholder="73301"></div>
+      </div>
+      <div class="field"><label>Country</label><input id="country" placeholder="United States"></div>
+
+      <h2>Professional Links</h2>
+      <div class="field"><label>LinkedIn</label><input id="linkedIn" placeholder="https://linkedin.com/in/you"></div>
+      <div class="field"><label>Portfolio / Website</label><input id="portfolio" placeholder="https://yoursite.com"></div>
+      <div class="field"><label>GitHub</label><input id="github" placeholder="https://github.com/you"></div>
+
+      <h2>Work</h2>
+      <div class="row">
+        <div class="field"><label>Current Company</label><input id="currentCompany" placeholder="Acme Corp"></div>
+        <div class="field"><label>Current Title</label><input id="currentTitle" placeholder="Software Engineer"></div>
+      </div>
+
+      <h2>Education</h2>
+      <div class="row">
+        <div class="field"><label>School</label><input id="school" placeholder="MIT"></div>
+        <div class="field"><label>Degree</label><input id="degree" placeholder="Bachelor's"></div>
+      </div>
+      <div class="field"><label>Major</label><input id="major" placeholder="Computer Science"></div>
+
+      <h2>EEO (Optional)</h2>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">Used for voluntary demographic fields on applications. Never shared.</p>
+      <div class="row">
+        <div class="field"><label>Gender</label><input id="gender" placeholder="Female"></div>
+        <div class="field"><label>Pronouns</label><input id="pronouns" placeholder="She/her"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Veteran Status</label>
+          <select id="veteran">
+            <option value="">Select...</option>
+            <option>I am not a veteran</option>
+            <option>I am a veteran</option>
+            <option>I prefer not to answer</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Disability</label>
+          <select id="disability">
+            <option value="">Select...</option>
+            <option>No</option>
+            <option>Yes</option>
+            <option>I prefer not to answer</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Preferences</h2>
+      <div class="row">
+        <div class="field"><label>Desired Salary</label><input id="salary" placeholder="120000"></div>
+        <div class="field"><label>Available Start</label><input id="startDate" placeholder="2 weeks"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Authorized to Work?</label>
+          <select id="authorized"><option value="">Select...</option><option>Yes</option><option>No</option></select>
+        </div>
+        <div class="field">
+          <label>Need Sponsorship?</label>
+          <select id="sponsorship"><option value="">Select...</option><option>No</option><option>Yes</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Open to Relocation?</label>
+        <select id="relocate"><option value="">Select...</option><option>Yes</option><option>No</option></select>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="saveBtn">Save Profile</button>
+        <span class="status" id="statusText"></span>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Redirect to main web app
-    window.location.href = '/';
+    const FIELDS = {
+      personal: ['firstName','lastName','email','phone','address','city','state','zip','country','linkedIn','portfolio','github'],
+      work: ['currentCompany','currentTitle'],
+      education: ['school','degree','major'],
+      eeo: ['gender','pronouns','veteran','disability'],
+      preferences: ['salary','startDate','authorized','sponsorship','relocate']
+    };
+
+    // Load existing profile
+    chrome.storage.local.get('profile', (result) => {
+      if (!result.profile) return;
+      const p = result.profile;
+      // Personal
+      if (p.personal) {
+        for (const f of FIELDS.personal) {
+          const el = document.getElementById(f);
+          if (el) {
+            if (f === 'address') el.value = p.personal.location?.address || '';
+            else if (f === 'city') el.value = p.personal.location?.city || '';
+            else if (f === 'state') el.value = p.personal.location?.state || '';
+            else if (f === 'zip') el.value = p.personal.location?.zip || '';
+            else if (f === 'country') el.value = p.personal.location?.country || '';
+            else el.value = p.personal[f] || '';
+          }
+        }
+      }
+      if (p.work) { for (const f of FIELDS.work) { const el = document.getElementById(f); if (el) el.value = p.work[f] || ''; } }
+      if (p.education) { for (const f of FIELDS.education) { const el = document.getElementById(f); if (el) el.value = p.education[f] || ''; } }
+      if (p.eeo) { for (const f of FIELDS.eeo) { const el = document.getElementById(f); if (el) el.value = p.eeo[f] || ''; } }
+      if (p.preferences) { for (const f of FIELDS.preferences) { const el = document.getElementById(f); if (el) el.value = p.preferences[f] || ''; } }
+    });
+
+    // Save
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const v = (id) => document.getElementById(id)?.value?.trim() || '';
+      const profile = {
+        personal: {
+          firstName: v('firstName'), lastName: v('lastName'), email: v('email'), phone: v('phone'),
+          location: { address: v('address'), city: v('city'), state: v('state'), zip: v('zip'), country: v('country') },
+          linkedIn: v('linkedIn'), portfolio: v('portfolio'), github: v('github'), website: v('portfolio'),
+        },
+        work: { currentCompany: v('currentCompany'), currentTitle: v('currentTitle') },
+        education: { school: v('school'), degree: v('degree'), major: v('major') },
+        eeo: { gender: v('gender'), pronouns: v('pronouns'), veteran: v('veteran'), disability: v('disability') },
+        preferences: { salary: v('salary'), startDate: v('startDate'), authorized: v('authorized'), sponsorship: v('sponsorship'), relocate: v('relocate') },
+      };
+
+      chrome.storage.local.set({ profile }, () => {
+        const st = document.getElementById('statusText');
+        st.textContent = '✓ Profile saved!';
+        st.className = 'status';
+        setTimeout(() => { st.textContent = ''; }, 3000);
+      });
+    });
   </script>
 </body>
 </html>
