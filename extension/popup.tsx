@@ -12,7 +12,15 @@ interface Profile {
     lastName: string
     email: string
     phone: string
+    location?: {
+      city?: string
+      state?: string
+    }
+    linkedIn?: string
   }
+  workExperience?: Array<{ company: string; title: string }>
+  education?: Array<{ institution: string; degree: string }>
+  skills?: string[]
 }
 
 interface DetectedField {
@@ -39,7 +47,7 @@ function PopupApp() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAutofilling, setIsAutofilling] = useState(false)
-  const [status, setStatus] = useState<string | null>(null)
+  const [status, setStatus] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [view, setView] = useState<'main' | 'settings'>('main')
 
   useEffect(() => {
@@ -49,11 +57,9 @@ function PopupApp() {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-      
+
       if (tab?.id) {
-        // Request field detection from content script
         try {
           const response = await chrome.tabs.sendMessage(tab.id, { type: 'DETECT_FIELDS' })
           if (response?.success) {
@@ -65,17 +71,15 @@ function PopupApp() {
             })
           }
         } catch {
-          // Content script not loaded
           setTabState({
             isJobSite: false,
             fieldsDetected: 0,
-            domain: new URL(tab.url || '').hostname,
+            domain: tab.url ? new URL(tab.url).hostname : 'Unknown',
             fields: [],
           })
         }
       }
 
-      // Get profile
       const result = await chrome.storage.local.get('profile')
       setProfile(result.profile || null)
     } catch (error) {
@@ -93,7 +97,7 @@ function PopupApp() {
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-      
+
       if (tab?.id) {
         const response = await chrome.tabs.sendMessage(tab.id, {
           type: 'PERFORM_AUTOFILL',
@@ -104,56 +108,65 @@ function PopupApp() {
         })
 
         if (response?.success) {
-          setStatus(`Filled ${response.data.filledCount} fields`)
-          setTimeout(() => setStatus(null), 3000)
+          const count = response.data.filledCount
+          setStatus({
+            text: count > 0 ? `Filled ${count} field${count !== 1 ? 's' : ''}` : 'No fields could be filled',
+            type: count > 0 ? 'success' : 'error'
+          })
+          setTimeout(() => setStatus(null), 4000)
+        } else {
+          setStatus({ text: response?.error || 'Autofill failed', type: 'error' })
         }
       }
-    } catch (error) {
-      setStatus('Autofill failed')
+    } catch {
+      setStatus({ text: 'Could not connect to page', type: 'error' })
     } finally {
       setIsAutofilling(false)
     }
   }
 
   const handleOpenDashboard = () => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('dashboard.html'),
-    })
+    chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') })
   }
 
   const handleHighlightFields = async () => {
     if (!tabState?.fields.length) return
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    
     if (tab?.id) {
       await chrome.tabs.sendMessage(tab.id, {
         type: 'HIGHLIGHT_FIELDS',
-        payload: {
-          selectors: tabState.fields.map(f => f.selector),
-        },
+        payload: { selectors: tabState.fields.map(f => f.selector) },
       })
     }
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+        <div style={{
+          width: '32px', height: '32px', border: '3px solid #e5e7eb',
+          borderTopColor: '#2563eb', borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
       </div>
     )
   }
 
   return (
-    <div className="p-4">
+    <div style={{ padding: '16px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-900">JobFlow</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', margin: 0 }}>JobFlow</h1>
         <button
           onClick={() => setView(view === 'main' ? 'settings' : 'main')}
-          className="p-1 hover:bg-gray-100 rounded"
+          style={{
+            padding: '4px', background: 'none', border: 'none', cursor: 'pointer',
+            borderRadius: '4px', display: 'flex'
+          }}
+          title="Settings"
         >
-          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg width="20" height="20" fill="none" stroke="#6b7280" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -164,77 +177,128 @@ function PopupApp() {
         <SettingsView onBack={() => setView('main')} />
       ) : (
         <>
-          {/* Status */}
+          {/* Status Message */}
           {status && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-700">{status}</p>
+            <div style={{
+              marginBottom: '12px', padding: '10px 12px', borderRadius: '8px',
+              backgroundColor: status.type === 'success' ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${status.type === 'success' ? '#bbf7d0' : '#fecaca'}`
+            }}>
+              <p style={{
+                margin: 0, fontSize: '13px',
+                color: status.type === 'success' ? '#15803d' : '#b91c1c'
+              }}>{status.text}</p>
             </div>
           )}
 
-          {/* Current Page Status */}
-          <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
-            <div className="flex items-center gap-2 mb-2">
-              {tabState?.isJobSite ? (
-                <span className="w-2 h-2 bg-green-500 rounded-full" />
+          {/* Quick Profile Summary */}
+          <div style={{
+            marginBottom: '12px', padding: '12px', backgroundColor: '#fff',
+            borderRadius: '8px', border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Profile</span>
+              {profile?.personal?.firstName ? (
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 500 }}>Ready</span>
               ) : (
-                <span className="w-2 h-2 bg-gray-300 rounded-full" />
+                <span style={{ fontSize: '12px', color: '#ca8a04', fontWeight: 500 }}>Not set up</span>
               )}
-              <span className="text-sm font-medium text-gray-700">
-                {tabState?.domain || 'Unknown'}
-              </span>
             </div>
-            
-            {tabState?.fieldsDetected ? (
-              <p className="text-sm text-gray-500">
-                {tabState.fieldsDetected} form field{tabState.fieldsDetected !== 1 ? 's' : ''} detected
-              </p>
+            {profile?.personal?.firstName ? (
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                <p style={{ margin: '2px 0' }}>
+                  {profile.personal.firstName} {profile.personal.lastName}
+                </p>
+                {profile.personal.email && (
+                  <p style={{ margin: '2px 0' }}>{profile.personal.email}</p>
+                )}
+                {profile.personal.phone && (
+                  <p style={{ margin: '2px 0' }}>{profile.personal.phone}</p>
+                )}
+                {profile.personal.location?.city && (
+                  <p style={{ margin: '2px 0' }}>
+                    {profile.personal.location.city}
+                    {profile.personal.location.state ? `, ${profile.personal.location.state}` : ''}
+                  </p>
+                )}
+              </div>
             ) : (
-              <p className="text-sm text-gray-500">No form fields detected</p>
+              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>
+                Set up your profile in the dashboard to start autofilling
+              </p>
             )}
           </div>
 
-          {/* Profile Status */}
-          <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Profile</span>
-              {profile ? (
-                <span className="text-sm text-green-600">Ready</span>
-              ) : (
-                <span className="text-sm text-yellow-600">Not set up</span>
-              )}
+          {/* Current Page Status */}
+          <div style={{
+            marginBottom: '12px', padding: '12px', backgroundColor: '#fff',
+            borderRadius: '8px', border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{
+                width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block',
+                backgroundColor: tabState?.isJobSite ? '#22c55e' : '#d1d5db'
+              }} />
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                {tabState?.domain || 'Unknown'}
+              </span>
             </div>
+            <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
+              {tabState?.fieldsDetected
+                ? `${tabState.fieldsDetected} form field${tabState.fieldsDetected !== 1 ? 's' : ''} detected`
+                : 'No form fields detected'}
+            </p>
+            {tabState && tabState.fieldsDetected > 0 && (
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#9ca3af' }}>
+                {tabState.fields.filter(f => f.suggestedMapping).length} can be auto-filled
+              </p>
+            )}
           </div>
 
           {/* Actions */}
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               onClick={handleAutofill}
-              disabled={!tabState?.fieldsDetected || !profile || isAutofilling}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!tabState?.fieldsDetected || !profile?.personal?.firstName || isAutofilling}
+              style={{
+                width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: 500,
+                color: '#fff', backgroundColor: '#2563eb', border: 'none', borderRadius: '8px',
+                cursor: (!tabState?.fieldsDetected || !profile?.personal?.firstName || isAutofilling) ? 'not-allowed' : 'pointer',
+                opacity: (!tabState?.fieldsDetected || !profile?.personal?.firstName || isAutofilling) ? 0.5 : 1,
+                transition: 'background-color 0.15s'
+              }}
             >
               {isAutofilling ? 'Filling...' : 'Autofill Form'}
             </button>
 
-            {tabState?.fieldsDetected ? (
+            {tabState && tabState.fieldsDetected > 0 && (
               <button
                 onClick={handleHighlightFields}
-                className="w-full py-2 px-4 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border border-gray-300 transition-colors"
+                style={{
+                  width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: 500,
+                  color: '#374151', backgroundColor: '#fff', border: '1px solid #d1d5db',
+                  borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.15s'
+                }}
               >
                 Highlight Fields
               </button>
-            ) : null}
+            )}
 
             <button
               onClick={handleOpenDashboard}
-              className="w-full py-2 px-4 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border border-gray-300 transition-colors"
+              style={{
+                width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: 500,
+                color: '#374151', backgroundColor: '#fff', border: '1px solid #d1d5db',
+                borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.15s'
+              }}
             >
               Open Dashboard
             </button>
           </div>
 
-          {/* Quick Stats */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+          {/* Footer */}
+          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: '#9ca3af' }}>
               JobFlow Autofill v1.0.0
             </p>
           </div>
@@ -269,61 +333,71 @@ function SettingsView({ onBack }: { onBack: () => void }) {
     const settings = result.settings || {}
     settings[key] = value
     await chrome.storage.local.set({ settings })
-    
+
     if (key === 'autoDetect') setAutoDetect(value)
     if (key === 'showNotifications') setShowNotifications(value)
   }
+
+  const toggleStyle = (active: boolean) => ({
+    position: 'relative' as const,
+    display: 'inline-flex',
+    alignItems: 'center',
+    width: '44px',
+    height: '24px',
+    borderRadius: '12px',
+    backgroundColor: active ? '#2563eb' : '#d1d5db',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    transition: 'background-color 0.2s'
+  })
+
+  const toggleKnobStyle = (active: boolean) => ({
+    display: 'block',
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    backgroundColor: '#fff',
+    transform: active ? 'translateX(24px)' : 'translateX(4px)',
+    transition: 'transform 0.2s'
+  })
 
   return (
     <div>
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-4"
+        style={{
+          display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px',
+          color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer',
+          padding: 0, marginBottom: '16px'
+        }}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </button>
 
-      <h2 className="text-lg font-semibold mb-4">Settings</h2>
+      <h2 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 16px' }}>Settings</h2>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <p className="text-sm font-medium text-gray-700">Auto-detect forms</p>
-            <p className="text-xs text-gray-500">Automatically detect job application forms</p>
+            <p style={{ margin: 0, fontSize: '13px', fontWeight: 500, color: '#374151' }}>Auto-detect forms</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#9ca3af' }}>Automatically detect job application forms</p>
           </div>
-          <button
-            onClick={() => saveSettings('autoDetect', !autoDetect)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              autoDetect ? 'bg-blue-600' : 'bg-gray-200'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                autoDetect ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+          <button onClick={() => saveSettings('autoDetect', !autoDetect)} style={toggleStyle(autoDetect)}>
+            <span style={toggleKnobStyle(autoDetect)} />
           </button>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <p className="text-sm font-medium text-gray-700">Notifications</p>
-            <p className="text-xs text-gray-500">Show notifications after autofill</p>
+            <p style={{ margin: 0, fontSize: '13px', fontWeight: 500, color: '#374151' }}>Notifications</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#9ca3af' }}>Show notifications after autofill</p>
           </div>
-          <button
-            onClick={() => saveSettings('showNotifications', !showNotifications)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              showNotifications ? 'bg-blue-600' : 'bg-gray-200'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                showNotifications ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+          <button onClick={() => saveSettings('showNotifications', !showNotifications)} style={toggleStyle(showNotifications)}>
+            <span style={toggleKnobStyle(showNotifications)} />
           </button>
         </div>
       </div>
