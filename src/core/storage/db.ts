@@ -24,6 +24,9 @@ export class JobFlowDatabase extends Dexie {
   syncQueue!: Table<SyncQueueItem>
   syncStatus!: Table<SyncStatus & { id: string }>
 
+  // Usage tracking for payments
+  usage!: Table<UsageRecord>
+
   constructor() {
     super('JobFlowDB')
     
@@ -38,7 +41,28 @@ export class JobFlowDatabase extends Dexie {
       syncQueue: '++id, entityType, entityId, action, createdAt',
       syncStatus: 'id'
     })
+
+    // Version 3 adds usage tracking for payments
+    this.version(3).stores({
+      profiles: 'id, createdAt, updatedAt',
+      applications: 'id, company, status, stage, appliedDate, createdAt, followUpDate',
+      formSchemas: 'id, domain, urlPattern',
+      settings: 'id',
+      notifications: 'id, userId, type, priority, scheduledFor, readAt, createdAt, [userId+readAt]',
+      syncQueue: '++id, entityType, entityId, action, createdAt',
+      syncStatus: 'id',
+      usage: 'id, month'
+    })
   }
+}
+
+// Usage record for payment/plan tracking
+export interface UsageRecord {
+  id: string
+  month: string // YYYY-MM
+  fillCount: number
+  plan: 'free' | 'pro'
+  stripeCustomerId: string | null
 }
 
 // Sync queue for offline-first sync

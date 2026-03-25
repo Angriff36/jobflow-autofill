@@ -114,7 +114,7 @@ async function handleMessage(
       return saveProfile(message.payload as Profile)
 
     case 'AUTOFILL':
-      return autofill(message.payload as { fields: DetectedField[] })
+      return autofillWithUsageCheck(message.payload as { fields: DetectedField[] }, _sender)
 
     case 'DETECT_FORM':
       return { success: true, data: { detected: true } }
@@ -208,6 +208,71 @@ async function saveProfile(profile: Profile): Promise<{ success: boolean; error?
 // ============================================================================
 // Autofill Operations
 // ============================================================================
+
+// ============================================================================
+// Usage Gating
+// ============================================================================
+
+const FREE_FILL_LIMIT = 10
+
+interface UsageData {
+  month: string
+  fillCount: number
+  plan: 'free' | 'pro'
+}
+
+function getCurrentMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+async function getUsageData(): Promise<UsageData> {
+  const result = await chrome.storage.local.get('usageData')
+  const month = getCurrentMonth()
+  if (result.usageData && result.usageData.month === month) {
+    return result.usageData
+  }
+  // New month or first use — reset count
+  const data: UsageData = { month, fillCount: 0, plan: result.usageData?.plan || 'free' }
+  await chrome.storage.local.set({ usageData: data })
+  return data
+}
+
+async function incrementUsageCount(): Promise<void> {
+  const data = await getUsageData()
+  data.fillCount++
+  await chrome.storage.local.set({ usageData: data })
+}
+
+async function autofillWithUsageCheck(
+  payload: { fields: DetectedField[] },
+  sender: chrome.runtime.MessageSender
+): Promise<{ success: boolean; filledCount?: number; error?: string }> {
+  const usage = await getUsageData()
+
+  if (usage.plan === 'free' && usage.fillCount >= FREE_FILL_LIMIT) {
+    // Notify content script to show upgrade prompt
+    if (sender.tab?.id) {
+      chrome.tabs.sendMessage(sender.tab.id, {
+        type: 'SHOW_UPGRADE_PROMPT',
+        payload: {
+          fillCount: usage.fillCount,
+          limit: FREE_FILL_LIMIT,
+        },
+      }).catch(() => {})
+    }
+    return {
+      success: false,
+      error: `Free plan limit reached (${FREE_FILL_LIMIT} fills/month). Upgrade to Pro for unlimited fills.`,
+    }
+  }
+
+  const result = await autofill(payload)
+  if (result.success && result.filledCount && result.filledCount > 0) {
+    await incrementUsageCount()
+  }
+  return result
+}
 
 async function autofill(payload: { fields: DetectedField[] }): Promise<{ success: boolean; filledCount?: number; error?: string }> {
   try {
