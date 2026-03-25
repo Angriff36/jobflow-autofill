@@ -116,6 +116,9 @@ async function handleMessage(
     case 'AUTOFILL':
       return autofill(message.payload as { fields: DetectedField[] })
 
+    case 'TRACK_FILL':
+      return trackFill(message.payload as { count: number })
+
     case 'DETECT_FORM':
       return { success: true, data: { detected: true } }
 
@@ -138,6 +141,9 @@ async function handleMessage(
         message: string
         type?: 'basic' | 'image' | 'list' | 'progress'
       })
+
+    case 'GET_FILL_COUNT':
+      return getFillCount()
 
     case 'CONTENT_SCRIPT_READY':
     case 'FORM_DETECTED':
@@ -245,6 +251,63 @@ function getNestedValue(obj: unknown, path: string): unknown {
       : null
   }, obj)
 }
+
+// ============================================================================
+// Fill Count Tracking
+// ============================================================================
+
+function getUsageKey(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  return `usage_${year}_${month}`
+}
+
+async function trackFill(payload: { count: number }): Promise<{ success: boolean; data?: { total: number }; error?: string }> {
+  try {
+    const key = getUsageKey()
+    const result = await chrome.storage.local.get(key)
+    const current = (result[key] as number) || 0
+    const total = current + payload.count
+    await chrome.storage.local.set({ [key]: total })
+
+    // Update badge text
+    chrome.action.setBadgeText({ text: String(total) })
+    chrome.action.setBadgeBackgroundColor({ color: '#2563eb' })
+
+    return { success: true, data: { total } }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to track fill'
+    }
+  }
+}
+
+async function getFillCount(): Promise<{ success: boolean; data?: { count: number }; error?: string }> {
+  try {
+    const key = getUsageKey()
+    const result = await chrome.storage.local.get(key)
+    const count = (result[key] as number) || 0
+    return { success: true, data: { count } }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get fill count'
+    }
+  }
+}
+
+// Initialize badge with current fill count on startup
+;(async () => {
+  const key = getUsageKey()
+  const result = await chrome.storage.local.get(key)
+  const count = (result[key] as number) || 0
+  if (count > 0) {
+    chrome.action.setBadgeText({ text: String(count) })
+    chrome.action.setBadgeBackgroundColor({ color: '#2563eb' })
+  }
+})()
 
 // ============================================================================
 // Form Schema Operations

@@ -48,6 +48,7 @@ function PopupApp() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAutofilling, setIsAutofilling] = useState(false)
   const [status, setStatus] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+  const [fillCount, setFillCount] = useState(0)
   const [view, setView] = useState<'main' | 'settings'>('main')
 
   useEffect(() => {
@@ -82,6 +83,12 @@ function PopupApp() {
 
       const result = await chrome.storage.local.get('profile')
       setProfile(result.profile || null)
+
+      // Load fill count for this month
+      const fillResult = await chrome.runtime.sendMessage({ type: 'GET_FILL_COUNT' })
+      if (fillResult?.success) {
+        setFillCount(fillResult.data.count)
+      }
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -113,6 +120,13 @@ function PopupApp() {
             text: count > 0 ? `Filled ${count} field${count !== 1 ? 's' : ''}` : 'No fields could be filled',
             type: count > 0 ? 'success' : 'error'
           })
+          if (count > 0) {
+            // Track the fill count
+            const trackResult = await chrome.runtime.sendMessage({ type: 'TRACK_FILL', payload: { count } })
+            if (trackResult?.success) {
+              setFillCount(trackResult.data.total)
+            }
+          }
           setTimeout(() => setStatus(null), 4000)
         } else {
           setStatus({ text: response?.error || 'Autofill failed', type: 'error' })
@@ -223,9 +237,21 @@ function PopupApp() {
                 )}
               </div>
             ) : (
-              <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#9ca3af' }}>
-                Set up your profile in the dashboard to start autofilling
-              </p>
+              <div>
+                <p style={{ margin: '4px 0 8px', fontSize: '12px', color: '#9ca3af' }}>
+                  Set up your profile to start autofilling
+                </p>
+                <button
+                  onClick={handleOpenDashboard}
+                  style={{
+                    padding: '6px 12px', fontSize: '12px', fontWeight: 500,
+                    color: '#fff', backgroundColor: '#2563eb', border: 'none',
+                    borderRadius: '6px', cursor: 'pointer'
+                  }}
+                >
+                  Set up your profile
+                </button>
+              </div>
             )}
           </div>
 
@@ -255,6 +281,16 @@ function PopupApp() {
             )}
           </div>
 
+          {/* Fill Count */}
+          <div style={{
+            marginBottom: '12px', padding: '8px 12px', backgroundColor: '#eff6ff',
+            borderRadius: '8px', textAlign: 'center'
+          }}>
+            <span style={{ fontSize: '13px', color: '#1d4ed8', fontWeight: 500 }}>
+              {fillCount} fill{fillCount !== 1 ? 's' : ''} this month
+            </span>
+          </div>
+
           {/* Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
@@ -268,7 +304,7 @@ function PopupApp() {
                 transition: 'background-color 0.15s'
               }}
             >
-              {isAutofilling ? 'Filling...' : 'Autofill Form'}
+              {isAutofilling ? 'Filling...' : 'Autofill This Page'}
             </button>
 
             {tabState && tabState.fieldsDetected > 0 && (
@@ -297,10 +333,19 @@ function PopupApp() {
           </div>
 
           {/* Footer */}
-          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
+          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: '#9ca3af' }}>
               JobFlow Autofill v1.0.0
             </p>
+            <button
+              onClick={handleOpenDashboard}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '11px', color: '#2563eb', textDecoration: 'underline', padding: 0
+              }}
+            >
+              Settings
+            </button>
           </div>
         </>
       )}

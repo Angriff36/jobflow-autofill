@@ -472,12 +472,190 @@
     })
   }
 
+  function highlightFilledFields(selectors: string[]): void {
+    selectors.forEach(selector => {
+      try {
+        const element = document.querySelector<HTMLElement>(selector)
+        if (element) {
+          element.classList.add('jobflow-filled')
+          setTimeout(() => {
+            element.classList.remove('jobflow-filled')
+          }, 1500)
+        }
+      } catch {
+        // Invalid selector, skip
+      }
+    })
+  }
+
   function clearHighlights(): void {
     document.querySelectorAll<HTMLElement>('.jobflow-highlighted').forEach(el => {
       el.style.outline = ''
       el.style.outlineOffset = ''
       el.classList.remove('jobflow-highlighted')
     })
+  }
+
+  // ============================================================================
+  // Floating Badge
+  // ============================================================================
+
+  let floatingBadge: HTMLElement | null = null
+
+  function injectStyles(): void {
+    if (document.getElementById('jobflow-injected-styles')) return
+
+    const style = document.createElement('style')
+    style.id = 'jobflow-injected-styles'
+    style.textContent = `
+      @keyframes jobflow-filled-pulse {
+        0% { outline-color: #3B82F6; outline-width: 2px; }
+        50% { outline-color: #2563eb; outline-width: 3px; }
+        100% { outline-color: transparent; outline-width: 0px; }
+      }
+      .jobflow-filled {
+        outline: 2px solid #3B82F6 !important;
+        outline-offset: 2px !important;
+        animation: jobflow-filled-pulse 1.5s ease-out forwards !important;
+      }
+      #jobflow-floating-badge {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      #jobflow-floating-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+      }
+      #jobflow-floating-badge:active {
+        transform: translateY(0);
+      }
+      #jobflow-floating-badge svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+      #jobflow-toast {
+        position: fixed;
+        bottom: 80px;
+        right: 24px;
+        z-index: 2147483647;
+        padding: 12px 20px;
+        background: #065f46;
+        color: #fff;
+        border-radius: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.3s, transform 0.3s;
+      }
+      #jobflow-toast.jobflow-toast-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  function showFloatingBadge(): void {
+    if (floatingBadge) return
+    injectStyles()
+
+    floatingBadge = document.createElement('button')
+    floatingBadge.id = 'jobflow-floating-badge'
+    floatingBadge.innerHTML = `
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+      </svg>
+      Fill with JobFlow
+    `
+    floatingBadge.addEventListener('click', handleBadgeClick)
+    document.body.appendChild(floatingBadge)
+  }
+
+  function removeFloatingBadge(): void {
+    if (floatingBadge) {
+      floatingBadge.remove()
+      floatingBadge = null
+    }
+  }
+
+  async function handleBadgeClick(): Promise<void> {
+    try {
+      const result = await chrome.storage.local.get('profile')
+      const profile = result.profile as Profile | undefined
+      if (!profile || !profile.personal?.firstName) {
+        showToast('Please set up your profile first')
+        return
+      }
+
+      const fields = detectFields()
+      if (fields.length === 0) {
+        showToast('No fillable fields found')
+        return
+      }
+
+      const filledCount = performAutofill(fields, profile)
+
+      // Highlight filled fields
+      const filledSelectors = fields
+        .filter(f => f.suggestedMapping)
+        .map(f => f.selector)
+      highlightFilledFields(filledSelectors)
+
+      // Track the fill
+      if (filledCount > 0) {
+        chrome.runtime.sendMessage({
+          type: 'TRACK_FILL',
+          payload: { count: filledCount }
+        }).catch(() => {})
+      }
+
+      showToast(`Filled ${filledCount} field${filledCount !== 1 ? 's' : ''}`)
+    } catch {
+      showToast('Autofill failed')
+    }
+  }
+
+  function showToast(message: string): void {
+    injectStyles()
+
+    // Remove existing toast
+    const existing = document.getElementById('jobflow-toast')
+    if (existing) existing.remove()
+
+    const toast = document.createElement('div')
+    toast.id = 'jobflow-toast'
+    toast.textContent = message
+    document.body.appendChild(toast)
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+      toast.classList.add('jobflow-toast-visible')
+    })
+
+    setTimeout(() => {
+      toast.classList.remove('jobflow-toast-visible')
+      setTimeout(() => toast.remove(), 300)
+    }, 3000)
   }
 
   // ============================================================================
@@ -521,6 +699,16 @@
           : currentFields
 
         const filledCount = performAutofill(fieldsToFill, profile)
+
+        // Highlight filled fields with animation
+        const filledSelectors = fieldsToFill
+          .filter(f => f.suggestedMapping)
+          .map(f => f.selector)
+        highlightFilledFields(filledSelectors)
+
+        // Show toast
+        showToast(`Filled ${filledCount} field${filledCount !== 1 ? 's' : ''}`)
+
         sendResponse({ success: true, data: { filledCount } })
         break
       }
@@ -643,8 +831,30 @@
           url: window.location.href,
         },
       }).catch(() => {})
+
+      // Show floating badge if >3 fillable fields with matching patterns
+      const fillableFields = fields.filter(f => f.suggestedMapping)
+      if (fillableFields.length > 3) {
+        showFloatingBadge()
+      }
     }
   })
+
+  // Also detect on dynamic page changes (SPA navigation) with debounce
+  let mutationTimeout: ReturnType<typeof setTimeout> | null = null
+  const debouncedObserver = new MutationObserver(() => {
+    if (mutationTimeout) clearTimeout(mutationTimeout)
+    mutationTimeout = setTimeout(() => {
+      const fields = detectFields()
+      const fillableFields = fields.filter(f => f.suggestedMapping)
+      if (fillableFields.length > 3 && !floatingBadge) {
+        showFloatingBadge()
+      } else if (fillableFields.length <= 3 && floatingBadge) {
+        removeFloatingBadge()
+      }
+    }, 1000)
+  })
+  debouncedObserver.observe(document.body, { childList: true, subtree: true })
 
   console.log('JobFlow Autofill: Content script loaded')
 })()
