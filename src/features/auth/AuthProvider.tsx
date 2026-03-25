@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { supabase } from '../../core/storage/supabase'
+import { supabase, supabaseConfigured } from '../../core/storage/supabase'
 import type { Session, UserProfile, UserSettings } from '../../core/types/auth'
 
 // ============================================================================
@@ -68,6 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadSession = async () => {
     setIsLoading(true)
     try {
+      if (!supabaseConfigured) {
+        // No Supabase configured — run in local-only mode
+        setIsLoading(false)
+        return
+      }
       const { data: { session: supabaseSession } } = await supabase.auth.getSession()
       
       if (supabaseSession) {
