@@ -1,0 +1,209 @@
+[
+  {
+    "title": "🏗️ Architecture: JobFlow Autofill",
+    "description": "Design system architecture, choose tech stack, create project structure.\n\nApp Summary: JobFlow Autofill is a job application assistant that stores a user's job-related profile data locally and uses it to auto-complete online job applications, track submitted applications, monitor stages, and remind users when to follow up. It combines form autofill, application tracking, and follow-up workflow management in one product.\nProblem: Applying to jobs online is repetitive, slow, and mentally draining because candidates have to re-enter the same information across different employer portals, then separately track where they applied, what stage each application is in, and when to follow up. This app removes that friction by building a reusable local profile of the user's resume data, work history, education, links, documents, and standard answers, then using that information to complete applications faster and more fully while also helping the user stay organized after submission.\nTarget Audience: Job seekers who are applying to multiple jobs online and want to reduce repetitive data entry, avoid missing follow-ups, and keep all application activity organized in one place. This includes students, recent graduates, laid-off professionals, career switchers, and high-volume applicants.\nUser Flow: The user creates a secure local profile containing resume data, employment history, education, contact details, portfolio links, uploaded documents, and reusable answers to common job application questions. When the user opens an online job application, the app detects relevant fields and helps auto-fill the form using the stored profile data. The user can review and edit entries before submitting. After submission, the app logs the application automatically, stores the company, role, date, source link, and status, and places it into a pipeline such as Applied, Interviewing, Offer, Rejected, or Closed. The app then reminds the user when to follow up, suggests follow-up timing based on stage, and keeps a clean dashboard showing all active applications and next actions.",
+    "status": "archived",
+    "priority": "critical",
+    "tags": [
+      "architecture"
+    ],
+    "id": "ba899281-f6dd-43ee-ada5-4af2f2cf4af7",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "c4304c4d-de35-45c1-9d35-e6b501464d01",
+    "parent_task_id": null,
+    "dependencies": [],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-20T22:54:05.201Z"
+  },
+  {
+    "title": "💾 Database Design",
+    "description": "Design database schema and data models based on the user flow and features required.\n\nFeatures: User Auth, Notifications",
+    "status": "archived",
+    "priority": "high",
+    "tags": [
+      "database"
+    ],
+    "id": "0ae473ed-a5f2-45e3-b830-cf231320d123",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "07f4fd27-daf6-4bbf-b052-b9cacc0a897b",
+    "parent_task_id": null,
+    "dependencies": [
+      "ba899281-f6dd-43ee-ada5-4af2f2cf4af7"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-20T23:12:12.596Z"
+  },
+  {
+    "title": "⚡ Core Features",
+    "description": "Implement core features: User Auth, Notifications\n\nUser Flow: The user creates a secure local profile containing resume data, employment history, education, contact details, portfolio links, uploaded documents, and reusable answers to common job application questions. When the user opens an online job application, the app detects relevant fields and helps auto-fill the form using the stored profile data. The user can review and edit entries before submitting. After submission, the app logs the application automatically, stores the company, role, date, source link, and status, and places it into a pipeline such as Applied, Interviewing, Offer, Rejected, or Closed. The app then reminds the user when to follow up, suggests follow-up timing based on stage, and keeps a clean dashboard showing all active applications and next actions.",
+    "status": "archived",
+    "priority": "high",
+    "tags": [
+      "features"
+    ],
+    "id": "fd0e1c54-5e94-4452-95de-aabc950177e2",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "07f4fd27-daf6-4bbf-b052-b9cacc0a897b",
+    "parent_task_id": null,
+    "dependencies": [
+      "aee7346d-6069-4951-b911-22a4386592dd"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-20T23:42:56.397Z"
+  },
+  {
+    "title": "🎨 UI/UX Design",
+    "description": "Design user interface and experience.\n\nTarget Audience: Job seekers who are applying to multiple jobs online and want to reduce repetitive data entry, avoid missing follow-ups, and keep all application activity organized in one place. This includes students, recent graduates, laid-off professionals, career switchers, and high-volume applicants.\nBusiness Type: B2C",
+    "status": "archived",
+    "priority": "medium",
+    "tags": [
+      "design"
+    ],
+    "id": "e263e7fd-ddc1-4ee9-a322-7fff88ef7f3a",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "3df8b66e-ed9e-489a-ab8b-10b1ba555d0b",
+    "parent_task_id": null,
+    "dependencies": [
+      "ba899281-f6dd-43ee-ada5-4af2f2cf4af7"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-20T23:12:12.602Z"
+  },
+  {
+    "title": "🔌 API Development",
+    "description": "Build backend API and services",
+    "status": "archived",
+    "priority": "high",
+    "tags": [
+      "api"
+    ],
+    "id": "aee7346d-6069-4951-b911-22a4386592dd",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "07f4fd27-daf6-4bbf-b052-b9cacc0a897b",
+    "parent_task_id": null,
+    "dependencies": [
+      "ba899281-f6dd-43ee-ada5-4af2f2cf4af7",
+      "0ae473ed-a5f2-45e3-b830-cf231320d123"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-20T23:29:44.713Z"
+  },
+  {
+    "title": "📱 Platform Development",
+    "description": "Build for: Web, Browser Extension",
+    "status": "archived",
+    "priority": "high",
+    "tags": [
+      "platform"
+    ],
+    "id": "cef0f429-89e3-47ab-9d58-c6dde85f1a7c",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "07f4fd27-daf6-4bbf-b052-b9cacc0a897b",
+    "parent_task_id": null,
+    "dependencies": [
+      "fd0e1c54-5e94-4452-95de-aabc950177e2",
+      "e263e7fd-ddc1-4ee9-a322-7fff88ef7f3a"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-20T23:50:57.479Z"
+  },
+  {
+    "title": "✅ Testing & QA",
+    "description": "Write tests and perform quality assurance",
+    "status": "archived",
+    "priority": "medium",
+    "tags": [
+      "testing"
+    ],
+    "id": "4ce66482-c5cc-45ca-b3e9-0c0cbeba730c",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "c4304c4d-de35-45c1-9d35-e6b501464d01",
+    "parent_task_id": null,
+    "dependencies": [
+      "fd0e1c54-5e94-4452-95de-aabc950177e2",
+      "cef0f429-89e3-47ab-9d58-c6dde85f1a7c"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-21T03:13:55.542Z",
+    "openclaw_session_id": "task-4ce66482-c5cc-45ca-b3e9-0c0cbeba730c",
+    "openclaw_agent_id": "sentinel",
+    "started_at": "2026-03-21T03:12:26.946Z"
+  },
+  {
+    "title": "📖 Documentation",
+    "description": "Create user and developer documentation",
+    "status": "archived",
+    "priority": "low",
+    "tags": [
+      "docs"
+    ],
+    "id": "8b9c2ab4-1924-40a9-8d4a-241459c1aa74",
+    "source": "internal",
+    "created_by": "Project Creator",
+    "assigned_agent_id": "3df8b66e-ed9e-489a-ab8b-10b1ba555d0b",
+    "parent_task_id": null,
+    "dependencies": [
+      "4ce66482-c5cc-45ca-b3e9-0c0cbeba730c"
+    ],
+    "branch_ref": null,
+    "openclaw_session_key": null,
+    "openclaw_run_id": null,
+    "partner_request_id": "12d4039c-1e31-475d-b478-79fa4e4b53da",
+    "forecast": null,
+    "acceptance_criteria": null,
+    "created_at": "2026-03-19T14:43:04.930Z",
+    "updated_at": "2026-03-21T03:36:47.983Z",
+    "openclaw_session_id": "task-8b9c2ab4-1924-40a9-8d4a-241459c1aa74",
+    "openclaw_agent_id": "scribe",
+    "started_at": "2026-03-21T03:36:18.974Z"
+  }
+]

@@ -1,0 +1,101 @@
+#!/usr/bin/env node
+
+/**
+ * Build script for browser extension
+ * Compiles TypeScript files and bundles for Chrome/Firefox
+ */
+
+import * as esbuild from 'esbuild'
+import * as fs from 'fs'
+import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ROOT_DIR = path.resolve(__dirname, '..')
+const EXTENSION_DIR = path.join(ROOT_DIR, 'extension')
+const DIST_DIR = path.join(ROOT_DIR, 'dist', 'extension')
+
+async function buildExtension() {
+  console.log('Building extension...')
+  
+  // Create dist directory
+  if (!fs.existsSync(DIST_DIR)) {
+    fs.mkdirSync(DIST_DIR, { recursive: true })
+  }
+  
+  // Build background script
+  console.log('Building background.js...')
+  await esbuild.build({
+    entryPoints: [path.join(EXTENSION_DIR, 'background.ts')],
+    bundle: true,
+    outfile: path.join(DIST_DIR, 'background.js'),
+    format: 'iife',
+    platform: 'browser',
+    target: ['chrome110'],
+    minify: true,
+  })
+  
+  // Build content script
+  console.log('Building content.js...')
+  await esbuild.build({
+    entryPoints: [path.join(EXTENSION_DIR, 'content.ts')],
+    bundle: true,
+    outfile: path.join(DIST_DIR, 'content.js'),
+    format: 'iife',
+    platform: 'browser',
+    target: ['chrome110'],
+    minify: true,
+  })
+  
+  // Build popup
+  console.log('Building popup...')
+  await esbuild.build({
+    entryPoints: [path.join(EXTENSION_DIR, 'popup.tsx')],
+    bundle: true,
+    outfile: path.join(DIST_DIR, 'popup.js'),
+    format: 'iife',
+    platform: 'browser',
+    target: ['chrome110'],
+    minify: true,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
+  })
+  
+  // Copy static files
+  console.log('Copying static files...')
+  
+  // Copy manifest
+  fs.copyFileSync(
+    path.join(EXTENSION_DIR, 'manifest.json'),
+    path.join(DIST_DIR, 'manifest.json')
+  )
+  
+  // Copy HTML
+  fs.copyFileSync(
+    path.join(EXTENSION_DIR, 'popup.html'),
+    path.join(DIST_DIR, 'popup.html')
+  )
+  
+  // Copy icons
+  const iconsDir = path.join(DIST_DIR, 'icons')
+  if (!fs.existsSync(iconsDir)) {
+    fs.mkdirSync(iconsDir)
+  }
+  
+  const iconSizes = [16, 48, 128]
+  for (const size of iconSizes) {
+    const iconSrc = path.join(EXTENSION_DIR, 'icons', `icon${size}.png`)
+    if (fs.existsSync(iconSrc)) {
+      fs.copyFileSync(iconSrc, path.join(iconsDir, `icon${size}.png`))
+    }
+  }
+  
+  console.log('✓ Extension built successfully!')
+  console.log(`  Output: ${DIST_DIR}`)
+}
+
+buildExtension().catch((error) => {
+  console.error('Build failed:', error)
+  process.exit(1)
+})
