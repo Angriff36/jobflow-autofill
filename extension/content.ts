@@ -150,6 +150,7 @@
     website: [
       /^(website|personal_?website|web_?url|url|homepage)$/i,
       /^urls\[personal\]$/i,
+      /^urls\[video\s*link\s*\]$/i,
     ],
 
     // Work History
