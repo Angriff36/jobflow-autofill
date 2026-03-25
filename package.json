@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Job application assistant with form autofill and application tracking",
+  "description": "Job application autofill and tracking",
+  "homepage": "https://jobflow.app",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
