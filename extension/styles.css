@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Extension popup styles */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -20,4 +16,93 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ============================================================================
+   Content Script Injected Styles
+   These styles are injected into host pages via the content script.
+   They use high-specificity selectors and !important to avoid conflicts.
+   ============================================================================ */
+
+/* Floating badge - bottom-right corner trigger for autofill */
+#jobflow-floating-badge {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+#jobflow-floating-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+}
+
+#jobflow-floating-badge:active {
+  transform: translateY(0);
+}
+
+#jobflow-floating-badge svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* Toast notification after fill */
+#jobflow-toast {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  z-index: 2147483647;
+  padding: 12px 20px;
+  background: #065f46;
+  color: #fff;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+#jobflow-toast.jobflow-toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Filled field highlight animation */
+@keyframes jobflow-filled-pulse {
+  0% {
+    outline-color: #3B82F6;
+    outline-width: 2px;
+  }
+  50% {
+    outline-color: #2563eb;
+    outline-width: 3px;
+  }
+  100% {
+    outline-color: transparent;
+    outline-width: 0px;
+  }
+}
+
+.jobflow-filled {
+  outline: 2px solid #3B82F6 !important;
+  outline-offset: 2px !important;
+  animation: jobflow-filled-pulse 1.5s ease-out forwards !important;
 }
