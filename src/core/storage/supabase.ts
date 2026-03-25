@@ -408,11 +408,114 @@ export const notificationService = {
 }
 
 // ============================================================================
-// Sync Service
+// Sync Service (Offline-First Queue Pattern)
 // ============================================================================
 
+import type { SyncQueueItem } from './db'
+
+const MAX_RETRY_COUNT = 5
+
 export const syncService = {
-  // Sync local applications to cloud
+  // Queue a local write for cloud sync
+  async queueSync(
+    entityType: SyncQueueItem['entityType'],
+    entityId: string,
+    action: SyncQueueItem['action'],
+    payload: Record<string, unknown>
+  ): Promise<void> {
+    const { syncQueueRepository, syncStatusRepository } = await import('./db')
+    await syncQueueRepository.add({ entityType, entityId, action, payload })
+    const count = await syncQueueRepository.getCount()
+    await syncStatusRepository.update({ pendingChanges: count })
+  },
+
+  // Process the entire sync queue
+  async processQueue(): Promise<{ synced: number; failed: number; errors: string[] }> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { synced: 0, failed: 0, errors: ['Not authenticated'] }
+
+    const { syncQueueRepository, syncStatusRepository } = await import('./db')
+
+    const status = await syncStatusRepository.get()
+    if (status.syncInProgress) return { synced: 0, failed: 0, errors: ['Sync already in progress'] }
+    if (!status.syncEnabled) return { synced: 0, failed: 0, errors: ['Sync is disabled'] }
+
+    await syncStatusRepository.setSyncInProgress(true)
+
+    const queue = await syncQueueRepository.getAll()
+    let synced = 0
+    let failed = 0
+    const errors: string[] = []
+
+    for (const item of queue) {
+      try {
+        await this.processQueueItem(item, user.id)
+        await syncQueueRepository.remove(item.id!)
+        synced++
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        failed++
+        errors.push(`${item.entityType}/${item.entityId}: ${errorMsg}`)
+
+        if (item.retryCount >= MAX_RETRY_COUNT) {
+          await syncQueueRepository.remove(item.id!)
+          errors.push(`Dropped ${item.entityType}/${item.entityId} after ${MAX_RETRY_COUNT} retries`)
+        } else {
+          await syncQueueRepository.incrementRetry(item.id!, errorMsg)
+        }
+      }
+    }
+
+    const remaining = await syncQueueRepository.getCount()
+    await syncStatusRepository.update({ pendingChanges: remaining })
+    await syncStatusRepository.recordSync(errors.length === 0, errors.join('; ') || undefined)
+
+    return { synced, failed, errors }
+  },
+
+  // Process a single queue item
+  async processQueueItem(item: SyncQueueItem, userId: string): Promise<void> {
+    const tableMap: Record<string, string> = {
+      application: 'synced_applications',
+      profile: 'profiles',
+      settings: 'user_settings',
+      notification: 'notifications'
+    }
+    const table = tableMap[item.entityType]
+    if (!table) throw new Error(`Unknown entity type: ${item.entityType}`)
+
+    if (item.action === 'create' || item.action === 'update') {
+      const payload: Record<string, unknown> = { ...item.payload, user_id: userId, updated_at: new Date().toISOString() }
+
+      if (item.entityType === 'application') {
+        payload.local_id = item.entityId
+        const { error } = await supabase
+          .from(table)
+          .upsert(payload, { onConflict: 'user_id,local_id' })
+        if (error) throw new Error(error.message)
+      } else {
+        const { error } = await supabase.from(table).upsert(payload)
+        if (error) throw new Error(error.message)
+      }
+    } else if (item.action === 'delete') {
+      if (item.entityType === 'application') {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .eq('user_id', userId)
+          .eq('local_id', item.entityId)
+        if (error) throw new Error(error.message)
+      } else {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .eq('id', item.entityId)
+        if (error) throw new Error(error.message)
+      }
+    }
+  },
+
+  // Full sync of all local applications to cloud
   async syncApplications(): Promise<{ synced: number; errors: string[] }> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { synced: 0, errors: ['Not authenticated'] }
@@ -420,7 +523,6 @@ export const syncService = {
     const errors: string[] = []
     let synced = 0
 
-    // Get local applications
     const { db } = await import('./db')
     const localApps = await db.applications.toArray()
 
@@ -458,7 +560,6 @@ export const syncService = {
       }
     }
 
-    // Update sync status
     await supabase
       .from('profiles')
       .update({ last_sync_at: new Date().toISOString() })
@@ -467,3 +568,53 @@ export const syncService = {
     return { synced, errors }
   }
 }
+
+// ============================================================================
+// Background Sync Manager
+// ============================================================================
+
+const SYNC_INTERVAL_MS = 30_000 // 30 seconds
+
+export class BackgroundSyncManager {
+  private intervalId: ReturnType<typeof setInterval> | null = null
+  private isRunning = false
+
+  async start(): Promise<void> {
+    if (this.isRunning) return
+    this.isRunning = true
+
+    // Process queue immediately on start
+    await this.tick()
+
+    // Then run on interval
+    this.intervalId = setInterval(() => this.tick(), SYNC_INTERVAL_MS)
+
+    // Also sync when browser comes back online
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.tick())
+    }
+  }
+
+  stop(): void {
+    this.isRunning = false
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId)
+      this.intervalId = null
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', () => this.tick())
+    }
+  }
+
+  private async tick(): Promise<void> {
+    if (!navigator.onLine) return
+
+    try {
+      await syncService.processQueue()
+    } catch {
+      // Silently fail - will retry on next tick
+    }
+  }
+}
+
+export const backgroundSync = new BackgroundSyncManager()
