@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { applicationRepository } from '@/core/storage/db'
 import type { JobApplication, PipelineStage } from '@/core/types'
-import { Plus, Search, List, Columns, X } from 'lucide-react'
+import { Plus, Search, List, Columns, X, Briefcase, Target } from 'lucide-react'
 import { KanbanBoard } from './KanbanBoard'
 import { ApplicationDetailModal } from './ApplicationDetailModal'
 import { QuickAddForm } from './QuickAddForm'
@@ -10,11 +10,11 @@ import { ApplicationListView } from './ApplicationListView'
 export const STAGES: PipelineStage[] = ['applied', 'interviewing', 'offer', 'rejected', 'closed']
 
 export const stageConfig: Record<PipelineStage, { label: string; color: string; bg: string }> = {
-  applied: { label: 'Applied', color: 'text-blue-700', bg: 'bg-blue-100 text-blue-800' },
-  interviewing: { label: 'Interviewing', color: 'text-amber-700', bg: 'bg-amber-100 text-amber-800' },
-  offer: { label: 'Offer', color: 'text-emerald-700', bg: 'bg-emerald-100 text-emerald-800' },
-  rejected: { label: 'Rejected', color: 'text-red-700', bg: 'bg-red-100 text-red-800' },
-  closed: { label: 'Closed', color: 'text-gray-700', bg: 'bg-gray-100 text-gray-800' },
+  applied: { label: 'Applied', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20' },
+  interviewing: { label: 'Interviewing', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' },
+  offer: { label: 'Offer', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' },
+  rejected: { label: 'Rejected', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' },
+  closed: { label: 'Closed', color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50 text-gray-600 border border-gray-200 dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20' },
 }
 
 export type SortField = 'company' | 'appliedDate' | 'stage' | 'position'
@@ -94,13 +94,11 @@ export function Applications() {
     }
   }
 
-  // Get unique sources for filter dropdown
   const sources = useMemo(() => {
     const s = new Set(applications.map(a => a.source).filter(Boolean))
     return Array.from(s).sort()
   }, [applications])
 
-  // Filter and sort
   const filteredApps = useMemo(() => {
     let result = [...applications]
 
@@ -141,7 +139,6 @@ export function Applications() {
     return result
   }, [applications, searchQuery, filterStage, filterSource, sortField, sortDirection])
 
-  // Stats
   const stats = useMemo(() => {
     const active = applications.filter(a => a.status === 'active')
     const byStage: Record<PipelineStage, number> = {
@@ -167,8 +164,11 @@ export function Applications() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading applications...</p>
+        </div>
       </div>
     )
   }
@@ -178,22 +178,28 @@ export function Applications() {
       {/* Header with stats */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Applications</h2>
-          <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-            <span>{stats.total} active</span>
-            <span className="text-gray-300">|</span>
+          <h2 className="text-2xl font-bold text-foreground">Applications</h2>
+          <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground">
+            <span className="font-medium">{stats.total} active</span>
+            <span className="w-1 h-1 rounded-full bg-border" />
             <span>{stats.responseRate}% response rate</span>
             {STAGES.filter(s => s !== 'closed').map(stage => (
-              <span key={stage} className="hidden md:inline">
+              <span key={stage} className="hidden lg:inline-flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  stage === 'applied' ? 'bg-blue-500' :
+                  stage === 'interviewing' ? 'bg-amber-500' :
+                  stage === 'offer' ? 'bg-emerald-500' :
+                  'bg-red-500'
+                }`} />
                 <span className={stageConfig[stage].color}>{stats.byStage[stage]}</span>
-                {' '}{stageConfig[stage].label.toLowerCase()}
+                <span>{stageConfig[stage].label.toLowerCase()}</span>
               </span>
             ))}
           </div>
         </div>
         <button
           onClick={() => setShowQuickAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-semibold shadow-sm hover:shadow-md"
         >
           <Plus className="w-4 h-4" />
           Add Application
@@ -204,20 +210,20 @@ export function Applications() {
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search company, position, notes..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-8 py-2.5 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 placeholder:text-muted-foreground/60"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-accent rounded"
             >
-              <X className="w-3 h-3 text-gray-400" />
+              <X className="w-3 h-3 text-muted-foreground" />
             </button>
           )}
         </div>
@@ -226,7 +232,7 @@ export function Applications() {
         <select
           value={filterStage}
           onChange={e => setFilterStage(e.target.value as PipelineStage | '')}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2.5 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-foreground"
         >
           <option value="">All Stages</option>
           {STAGES.map(s => (
@@ -239,7 +245,7 @@ export function Applications() {
           <select
             value={filterSource}
             onChange={e => setFilterSource(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2.5 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-foreground"
           >
             <option value="">All Sources</option>
             {sources.map(s => (
@@ -249,11 +255,13 @@ export function Applications() {
         )}
 
         {/* View Toggle */}
-        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden ml-auto">
+        <div className="flex items-center bg-card border border-border rounded-lg overflow-hidden ml-auto">
           <button
             onClick={() => setView('list')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm ${
-              view === 'list' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+            className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium transition-all ${
+              view === 'list'
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
             }`}
           >
             <List className="w-4 h-4" />
@@ -261,8 +269,10 @@ export function Applications() {
           </button>
           <button
             onClick={() => setView('kanban')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm border-l border-gray-200 ${
-              view === 'kanban' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+            className={`flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium border-l border-border transition-all ${
+              view === 'kanban'
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
             }`}
           >
             <Columns className="w-4 h-4" />
@@ -273,13 +283,17 @@ export function Applications() {
 
       {/* Content */}
       {applications.length === 0 ? (
-        <div className="py-16 text-center">
-          <Columns className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
-          <p className="text-sm text-gray-500 mb-4">Start tracking your job applications to stay organized.</p>
+        <div className="py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center mx-auto mb-5">
+            <Target className="w-8 h-8 text-blue-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No applications yet</h3>
+          <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+            Start tracking your job applications to stay organized and on top of your search.
+          </p>
           <button
             onClick={() => setShowQuickAdd(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold shadow-sm hover:shadow-md transition-all"
           >
             <Plus className="w-4 h-4" />
             Add Your First Application

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { profileRepository, initializeDatabase } from '@/core/storage/db'
 import type {
   UserProfile,
@@ -26,6 +26,8 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Info,
+  Zap,
 } from 'lucide-react'
 
 // ============================================================================
@@ -61,6 +63,35 @@ const TABS = [
   { value: 'answers', label: 'Saved Answers', icon: MessageSquare },
 ] as const
 
+function computeCompleteness(profile: UserProfile): number {
+  let filled = 0
+  let total = 0
+
+  // Personal fields
+  const p = profile.personal
+  const personalFields = [p.firstName, p.lastName, p.email, p.phone, p.location.city]
+  total += personalFields.length
+  filled += personalFields.filter(Boolean).length
+
+  // Work experience
+  total += 1
+  if (profile.workExperience.length > 0) filled += 1
+
+  // Education
+  total += 1
+  if (profile.education.length > 0) filled += 1
+
+  // Skills
+  total += 1
+  if (profile.skills.length > 0) filled += 1
+
+  // Documents
+  total += 1
+  if (profile.documents.length > 0) filled += 1
+
+  return Math.round((filled / total) * 100)
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -76,7 +107,6 @@ export function ProfileEditor() {
     initializeDatabase().then(loadProfile)
   }, [])
 
-  // Auto-clear "saved" status after 3s
   useEffect(() => {
     if (saveStatus === 'saved') {
       const t = setTimeout(() => setSaveStatus('idle'), 3000)
@@ -116,15 +146,11 @@ export function ProfileEditor() {
     }
   }
 
-  // Debounced auto-save helper
   const scheduleAutoSave = useCallback(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-    saveTimeoutRef.current = setTimeout(() => {
-      // We'll trigger save on next render cycle
-    }, 2000)
+    saveTimeoutRef.current = setTimeout(() => {}, 2000)
   }, [])
 
-  // Helper to update profile and optionally auto-save
   function updateProfile(updater: (p: UserProfile) => UserProfile) {
     setProfile((prev) => {
       if (!prev) return prev
@@ -133,7 +159,6 @@ export function ProfileEditor() {
     scheduleAutoSave()
   }
 
-  // ---- Personal Info ----
   function updatePersonal(field: keyof PersonalInfo, value: string) {
     updateProfile((p) => ({
       ...p,
@@ -151,7 +176,6 @@ export function ProfileEditor() {
     }))
   }
 
-  // ---- Work Experience ----
   function addWorkExperience() {
     updateProfile((p) => ({
       ...p,
@@ -186,7 +210,6 @@ export function ProfileEditor() {
     }))
   }
 
-  // ---- Education ----
   function addEducation() {
     updateProfile((p) => ({
       ...p,
@@ -220,7 +243,6 @@ export function ProfileEditor() {
     }))
   }
 
-  // ---- Skills ----
   function addSkill(skill: string) {
     const trimmed = skill.trim()
     if (!trimmed) return
@@ -237,7 +259,6 @@ export function ProfileEditor() {
     }))
   }
 
-  // ---- Documents ----
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, docType: ProfileDocument['type']) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -260,7 +281,6 @@ export function ProfileEditor() {
       }))
     }
     reader.readAsDataURL(file)
-    // Reset file input
     e.target.value = ''
   }
 
@@ -271,7 +291,6 @@ export function ProfileEditor() {
     }))
   }
 
-  // ---- Saved Answers ----
   function addAnswer() {
     updateProfile((p) => ({
       ...p,
@@ -324,6 +343,8 @@ export function ProfileEditor() {
     }))
   }
 
+  const completeness = useMemo(() => profile ? computeCompleteness(profile) : 0, [profile])
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -331,8 +352,10 @@ export function ProfileEditor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading profile...</span>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <span className="text-sm text-muted-foreground">Loading profile...</span>
+        </div>
       </div>
     )
   }
@@ -349,14 +372,19 @@ export function ProfileEditor() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Profile Editor</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Profile Editor</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Complete your profile so the extension can autofill job applications.
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           <SaveStatusIndicator status={saveStatus} />
           <button
             onClick={handleSave}
             disabled={saveStatus === 'saving'}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all text-sm font-semibold shadow-sm"
           >
             <Save className="w-4 h-4" />
             {saveStatus === 'saving' ? 'Saving...' : 'Save Profile'}
@@ -364,22 +392,49 @@ export function ProfileEditor() {
         </div>
       </div>
 
+      {/* Profile Completeness */}
+      <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-semibold text-foreground">Profile Completeness</span>
+          </div>
+          <span className={`text-sm font-bold ${
+            completeness >= 80 ? 'text-emerald-600' : completeness >= 50 ? 'text-amber-600' : 'text-red-500'
+          }`}>{completeness}%</span>
+        </div>
+        <div className="h-2 bg-accent rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              completeness >= 80 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
+              completeness >= 50 ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+              'bg-gradient-to-r from-red-400 to-red-500'
+            }`}
+            style={{ width: `${completeness}%` }}
+          />
+        </div>
+        {completeness < 80 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Complete your profile to improve autofill accuracy. Fields marked with <Zap className="w-3 h-3 inline text-blue-500" /> are used by the extension.
+          </p>
+        )}
+      </div>
+
       {/* Tabbed Content */}
       <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-        <Tabs.List className="flex border-b mb-6 overflow-x-auto" aria-label="Profile sections">
+        <Tabs.List className="flex gap-1 p-1 bg-accent/50 rounded-xl mb-6 overflow-x-auto" aria-label="Profile sections">
           {TABS.map((tab) => (
             <Tabs.Trigger
               key={tab.value}
               value={tab.value}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground border-b-2 border-transparent hover:text-foreground hover:border-border transition-colors whitespace-nowrap data-[state=active]:text-primary data-[state=active]:border-primary"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-muted-foreground rounded-lg transition-all whitespace-nowrap hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
             </Tabs.Trigger>
           ))}
         </Tabs.List>
 
-        {/* Personal Information */}
         <Tabs.Content value="personal">
           <PersonalInfoSection
             personal={profile.personal}
@@ -388,7 +443,6 @@ export function ProfileEditor() {
           />
         </Tabs.Content>
 
-        {/* Work Experience */}
         <Tabs.Content value="work">
           <WorkExperienceSection
             experiences={profile.workExperience}
@@ -398,7 +452,6 @@ export function ProfileEditor() {
           />
         </Tabs.Content>
 
-        {/* Education */}
         <Tabs.Content value="education">
           <EducationSection
             education={profile.education}
@@ -408,7 +461,6 @@ export function ProfileEditor() {
           />
         </Tabs.Content>
 
-        {/* Skills */}
         <Tabs.Content value="skills">
           <SkillsSection
             skills={profile.skills}
@@ -417,7 +469,6 @@ export function ProfileEditor() {
           />
         </Tabs.Content>
 
-        {/* Documents */}
         <Tabs.Content value="documents">
           <DocumentsSection
             documents={profile.documents}
@@ -426,7 +477,6 @@ export function ProfileEditor() {
           />
         </Tabs.Content>
 
-        {/* Saved Answers */}
         <Tabs.Content value="answers">
           <SavedAnswersSection
             answers={profile.answers}
@@ -478,21 +528,37 @@ function FormField({
   label,
   children,
   className = '',
+  autofill,
+  hint,
 }: {
   label: string
   children: React.ReactNode
   className?: string
+  autofill?: boolean
+  hint?: string
 }) {
   return (
     <div className={className}>
-      <label className="block text-sm font-medium mb-1">{label}</label>
+      <label className="flex items-center gap-1.5 text-sm font-medium text-foreground mb-1.5">
+        {label}
+        {autofill && (
+          <span title="Used by the extension for autofill" className="inline-flex">
+            <Zap className="w-3 h-3 text-blue-500" />
+          </span>
+        )}
+        {hint && (
+          <span title={hint} className="inline-flex cursor-help">
+            <Info className="w-3 h-3 text-muted-foreground" />
+          </span>
+        )}
+      </label>
       {children}
     </div>
   )
 }
 
 const inputClass =
-  'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors'
+  'w-full px-3 py-2.5 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 placeholder:text-muted-foreground/50 transition-all'
 
 // ---- Personal Info ----
 
@@ -506,10 +572,10 @@ function PersonalInfoSection({
   onUpdateLocation: (field: keyof PersonalInfo['location'], value: string) => void
 }) {
   return (
-    <section className="p-6 bg-card rounded-lg border">
-      <h3 className="text-xl font-semibold mb-4">Personal Information</h3>
+    <section className="p-6 bg-card rounded-xl border border-border shadow-sm">
+      <h3 className="text-lg font-semibold text-foreground mb-5">Personal Information</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label="First Name">
+        <FormField label="First Name" autofill>
           <input
             type="text"
             value={personal.firstName}
@@ -518,7 +584,7 @@ function PersonalInfoSection({
             placeholder="John"
           />
         </FormField>
-        <FormField label="Last Name">
+        <FormField label="Last Name" autofill>
           <input
             type="text"
             value={personal.lastName}
@@ -527,7 +593,7 @@ function PersonalInfoSection({
             placeholder="Doe"
           />
         </FormField>
-        <FormField label="Email">
+        <FormField label="Email" autofill>
           <input
             type="email"
             value={personal.email}
@@ -536,7 +602,7 @@ function PersonalInfoSection({
             placeholder="john@example.com"
           />
         </FormField>
-        <FormField label="Phone">
+        <FormField label="Phone" autofill>
           <input
             type="tel"
             value={personal.phone}
@@ -547,9 +613,9 @@ function PersonalInfoSection({
         </FormField>
       </div>
 
-      <h4 className="text-lg font-medium mt-6 mb-3">Location</h4>
+      <h4 className="text-base font-semibold text-foreground mt-7 mb-4">Location</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label="Address" className="md:col-span-2">
+        <FormField label="Address" className="md:col-span-2" autofill>
           <input
             type="text"
             value={personal.location.address}
@@ -558,7 +624,7 @@ function PersonalInfoSection({
             placeholder="123 Main St"
           />
         </FormField>
-        <FormField label="City">
+        <FormField label="City" autofill>
           <input
             type="text"
             value={personal.location.city}
@@ -567,7 +633,7 @@ function PersonalInfoSection({
             placeholder="San Francisco"
           />
         </FormField>
-        <FormField label="State">
+        <FormField label="State" autofill>
           <input
             type="text"
             value={personal.location.state}
@@ -576,7 +642,7 @@ function PersonalInfoSection({
             placeholder="CA"
           />
         </FormField>
-        <FormField label="ZIP Code">
+        <FormField label="ZIP Code" autofill>
           <input
             type="text"
             value={personal.location.zip}
@@ -585,7 +651,7 @@ function PersonalInfoSection({
             placeholder="94102"
           />
         </FormField>
-        <FormField label="Country">
+        <FormField label="Country" autofill>
           <input
             type="text"
             value={personal.location.country}
@@ -596,9 +662,9 @@ function PersonalInfoSection({
         </FormField>
       </div>
 
-      <h4 className="text-lg font-medium mt-6 mb-3">Online Presence</h4>
+      <h4 className="text-base font-semibold text-foreground mt-7 mb-4">Online Presence</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label="LinkedIn">
+        <FormField label="LinkedIn" autofill hint="Many applications ask for your LinkedIn URL">
           <input
             type="url"
             value={personal.linkedIn || ''}
@@ -607,7 +673,7 @@ function PersonalInfoSection({
             placeholder="https://linkedin.com/in/johndoe"
           />
         </FormField>
-        <FormField label="Portfolio">
+        <FormField label="Portfolio" hint="Your portfolio or project showcase">
           <input
             type="url"
             value={personal.portfolio || ''}
@@ -616,7 +682,7 @@ function PersonalInfoSection({
             placeholder="https://johndoe.dev"
           />
         </FormField>
-        <FormField label="Website" className="md:col-span-2">
+        <FormField label="Website" className="md:col-span-2" autofill>
           <input
             type="url"
             value={personal.website || ''}
@@ -646,12 +712,15 @@ function WorkExperienceSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Work Experience</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Work Experience</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Add your work history for autofill.</p>
+        </div>
         <button
           onClick={onAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
         >
-          <Plus className="w-4 h-4" /> Add Experience
+          <Plus className="w-4 h-4" /> Add
         </button>
       </div>
 
@@ -666,20 +735,20 @@ function WorkExperienceSection({
       ) : (
         <div className="space-y-4">
           {experiences.map((exp, index) => (
-            <div key={exp.id} className="p-5 bg-card rounded-lg border">
+            <div key={exp.id} className="p-5 bg-card rounded-xl border border-border shadow-sm">
               <div className="flex items-start justify-between mb-4">
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Position {index + 1}
                 </span>
                 <button
                   onClick={() => onRemove(exp.id)}
-                  className="flex items-center gap-1 text-sm text-destructive hover:text-destructive/80 transition-colors"
+                  className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
                 >
-                  <Trash2 className="w-4 h-4" /> Remove
+                  <Trash2 className="w-3.5 h-3.5" /> Remove
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Company">
+                <FormField label="Company" autofill>
                   <input
                     type="text"
                     value={exp.company}
@@ -688,7 +757,7 @@ function WorkExperienceSection({
                     placeholder="Acme Inc."
                   />
                 </FormField>
-                <FormField label="Title">
+                <FormField label="Title" autofill>
                   <input
                     type="text"
                     value={exp.title}
@@ -716,7 +785,7 @@ function WorkExperienceSection({
                     />
                   </FormField>
                   <FormField label="End Date">
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <input
                         type="month"
                         value={exp.endDate || ''}
@@ -726,21 +795,21 @@ function WorkExperienceSection({
                         disabled={exp.endDate === null}
                         className={`${inputClass} disabled:opacity-50`}
                       />
-                      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                         <input
                           type="checkbox"
                           checked={exp.endDate === null}
                           onChange={(e) =>
                             onUpdate(exp.id, 'endDate', e.target.checked ? null : '')
                           }
-                          className="rounded"
+                          className="rounded border-border"
                         />
                         Current position
                       </label>
                     </div>
                   </FormField>
                 </div>
-                <FormField label="Description" className="md:col-span-2">
+                <FormField label="Description" className="md:col-span-2" hint="Key responsibilities and achievements">
                   <textarea
                     value={exp.description}
                     onChange={(e) => onUpdate(exp.id, 'description', e.target.value)}
@@ -773,12 +842,15 @@ function EducationSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Education</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Education</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">Add your educational background.</p>
+        </div>
         <button
           onClick={onAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
         >
-          <Plus className="w-4 h-4" /> Add Education
+          <Plus className="w-4 h-4" /> Add
         </button>
       </div>
 
@@ -793,20 +865,20 @@ function EducationSection({
       ) : (
         <div className="space-y-4">
           {education.map((edu, index) => (
-            <div key={edu.id} className="p-5 bg-card rounded-lg border">
+            <div key={edu.id} className="p-5 bg-card rounded-xl border border-border shadow-sm">
               <div className="flex items-start justify-between mb-4">
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Education {index + 1}
                 </span>
                 <button
                   onClick={() => onRemove(edu.id)}
-                  className="flex items-center gap-1 text-sm text-destructive hover:text-destructive/80 transition-colors"
+                  className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
                 >
-                  <Trash2 className="w-4 h-4" /> Remove
+                  <Trash2 className="w-3.5 h-3.5" /> Remove
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Institution">
+                <FormField label="Institution" autofill>
                   <input
                     type="text"
                     value={edu.institution}
@@ -815,7 +887,7 @@ function EducationSection({
                     placeholder="University of California"
                   />
                 </FormField>
-                <FormField label="Degree">
+                <FormField label="Degree" autofill>
                   <input
                     type="text"
                     value={edu.degree}
@@ -824,7 +896,7 @@ function EducationSection({
                     placeholder="Bachelor of Science"
                   />
                 </FormField>
-                <FormField label="Field of Study">
+                <FormField label="Field of Study" autofill>
                   <input
                     type="text"
                     value={edu.field}
@@ -841,7 +913,7 @@ function EducationSection({
                     className={inputClass}
                   />
                 </FormField>
-                <FormField label="GPA (optional)">
+                <FormField label="GPA" hint="Optional but some applications require it">
                   <input
                     type="text"
                     value={edu.gpa || ''}
@@ -880,7 +952,6 @@ function SkillsSection({
         setInput('')
       }
     }
-    // Remove last tag on backspace with empty input
     if (e.key === 'Backspace' && input === '' && skills.length > 0) {
       onRemove(skills[skills.length - 1])
     }
@@ -901,21 +972,23 @@ function SkillsSection({
 
   return (
     <section className="space-y-4">
-      <h3 className="text-xl font-semibold">Skills</h3>
-      <div className="p-6 bg-card rounded-lg border">
-        <p className="text-sm text-muted-foreground mb-3">
-          Type a skill and press Enter to add it. You can also paste a comma-separated list.
+      <div>
+        <h3 className="text-lg font-semibold text-foreground">Skills</h3>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Type a skill and press Enter. Paste a comma-separated list for bulk import.
         </p>
-        <div className="flex flex-wrap gap-2 p-3 border border-border rounded-md bg-background min-h-[48px] focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary transition-colors">
+      </div>
+      <div className="p-6 bg-card rounded-xl border border-border shadow-sm">
+        <div className="flex flex-wrap gap-2 p-3 border border-border rounded-lg bg-background min-h-[52px] focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:border-blue-500 transition-all">
           {skills.map((skill) => (
             <span
               key={skill}
-              className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary text-sm rounded-full"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 text-sm rounded-lg font-medium border border-blue-200 dark:border-blue-500/20"
             >
               {skill}
               <button
                 onClick={() => onRemove(skill)}
-                className="ml-0.5 hover:text-destructive transition-colors"
+                className="ml-0.5 hover:text-red-500 transition-colors"
                 aria-label={`Remove ${skill}`}
               >
                 <X className="w-3.5 h-3.5" />
@@ -928,12 +1001,12 @@ function SkillsSection({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            className="flex-1 min-w-[120px] bg-transparent outline-none text-sm py-1"
+            className="flex-1 min-w-[140px] bg-transparent outline-none text-sm py-1.5 placeholder:text-muted-foreground/50"
             placeholder={skills.length === 0 ? 'e.g., JavaScript, React, Node.js' : 'Add a skill...'}
           />
         </div>
         {skills.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-2.5 font-medium">
             {skills.length} skill{skills.length !== 1 ? 's' : ''} added
           </p>
         )}
@@ -976,24 +1049,26 @@ function DocumentsSection({
     if (docs.length === 0) return null
     return (
       <div className="space-y-2">
-        <h5 className="text-sm font-medium text-muted-foreground">{label}</h5>
+        <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</h5>
         {docs.map((doc) => {
           const Icon = getDocIcon(doc.type)
           return (
             <div
               key={doc.id}
-              className="flex items-center justify-between p-3 bg-background border rounded-md"
+              className="flex items-center justify-between p-3.5 bg-background border border-border rounded-lg hover:border-blue-200 transition-all group"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm truncate">{doc.name}</span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
-                  ({doc.mimeType})
-                </span>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-sm font-medium text-foreground truncate block">{doc.name}</span>
+                  <span className="text-xs text-muted-foreground">{doc.mimeType}</span>
+                </div>
               </div>
               <button
                 onClick={() => onRemove(doc.id)}
-                className="flex items-center gap-1 text-sm text-destructive hover:text-destructive/80 transition-colors flex-shrink-0 ml-2"
+                className="p-1.5 text-muted-foreground/50 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -1006,8 +1081,11 @@ function DocumentsSection({
 
   return (
     <section className="space-y-4">
-      <h3 className="text-xl font-semibold">Documents</h3>
-      <div className="p-6 bg-card rounded-lg border">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground">Documents</h3>
+        <p className="text-sm text-muted-foreground mt-0.5">Upload your resume and cover letters for autofill.</p>
+      </div>
+      <div className="p-6 bg-card rounded-xl border border-border shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <UploadCard
             label="Resume"
@@ -1036,11 +1114,11 @@ function DocumentsSection({
         </div>
 
         {documents.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">
+          <p className="text-center text-muted-foreground py-6 text-sm">
             No documents uploaded yet. Upload your resume and cover letters above.
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {renderDocList(resumes, 'Resumes')}
             {renderDocList(coverLetters, 'Cover Letters')}
             {renderDocList(otherDocs, 'Other Documents')}
@@ -1069,11 +1147,13 @@ function UploadCard({
     <button
       type="button"
       onClick={() => inputRef.current?.click()}
-      className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer"
+      className="flex flex-col items-center gap-2.5 p-6 border-2 border-dashed border-border rounded-xl hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all cursor-pointer group"
     >
-      <Upload className="w-6 h-6 text-muted-foreground" />
+      <div className="w-10 h-10 rounded-xl bg-accent group-hover:bg-blue-100 dark:group-hover:bg-blue-500/10 flex items-center justify-center transition-all">
+        <Upload className="w-5 h-5 text-muted-foreground group-hover:text-blue-600 transition-colors" />
+      </div>
       <div className="text-center">
-        <p className="text-sm font-medium">{label}</p>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <input
@@ -1107,24 +1187,25 @@ function SavedAnswersSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Saved Answers</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Saved Answers</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Save answers to common questions for quick reuse during applications.
+          </p>
+        </div>
         <button
           onClick={onAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
         >
-          <Plus className="w-4 h-4" /> Add Answer
+          <Plus className="w-4 h-4" /> Add
         </button>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Save answers to common job application questions for quick reuse.
-      </p>
 
       {answers.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
           title="No saved answers"
-          description="Save your answers to common questions like 'Why do you want to work here?' for quick reuse."
+          description='Save your answers to common questions like "Why do you want to work here?" for quick reuse.'
           actionLabel="Add Answer"
           onAction={onAdd}
         />
@@ -1175,26 +1256,26 @@ function SavedAnswerCard({
   }
 
   return (
-    <div className="p-5 bg-card rounded-lg border">
+    <div className="p-5 bg-card rounded-xl border border-border shadow-sm">
       <div className="flex items-start justify-between mb-4">
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Answer {index + 1}
         </span>
         <button
           onClick={() => onRemove(answer.id)}
-          className="flex items-center gap-1 text-sm text-destructive hover:text-destructive/80 transition-colors"
+          className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
         >
-          <Trash2 className="w-4 h-4" /> Remove
+          <Trash2 className="w-3.5 h-3.5" /> Remove
         </button>
       </div>
       <div className="space-y-4">
-        <FormField label="Question">
+        <FormField label="Question" hint="The question this answer responds to">
           <input
             type="text"
             value={answer.question}
             onChange={(e) => onUpdate(answer.id, 'question', e.target.value)}
             className={inputClass}
-            placeholder="e.g., Why do you want to work here?"
+            placeholder='e.g., "Why do you want to work here?"'
           />
         </FormField>
         <FormField label="Answer">
@@ -1205,17 +1286,17 @@ function SavedAnswerCard({
             placeholder="Write your answer..."
           />
         </FormField>
-        <FormField label="Tags">
-          <div className="flex flex-wrap gap-1.5 items-center">
+        <FormField label="Tags" hint="Tags help match answers to the right questions">
+          <div className="flex flex-wrap gap-1.5 items-center p-2 border border-border rounded-lg bg-background min-h-[40px] focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:border-blue-500 transition-all">
             {answer.tags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 text-xs rounded-md font-medium border border-blue-200 dark:border-blue-500/20"
               >
                 {tag}
                 <button
                   onClick={() => onRemoveTag(answer.id, tag)}
-                  className="hover:text-destructive transition-colors"
+                  className="hover:text-red-500 transition-colors"
                   aria-label={`Remove tag ${tag}`}
                 >
                   <X className="w-3 h-3" />
@@ -1227,7 +1308,7 @@ function SavedAnswerCard({
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
-              className="flex-1 min-w-[80px] bg-transparent outline-none text-xs py-1"
+              className="flex-1 min-w-[80px] bg-transparent outline-none text-xs py-1 placeholder:text-muted-foreground/50"
               placeholder="Add tag + Enter"
             />
           </div>
@@ -1253,15 +1334,17 @@ function EmptyState({
   onAction: () => void
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 bg-card rounded-lg border border-dashed">
-      <Icon className="w-10 h-10 text-muted-foreground/50 mb-3" />
-      <h4 className="text-base font-medium mb-1">{title}</h4>
-      <p className="text-sm text-muted-foreground mb-4 text-center max-w-sm">
+    <div className="flex flex-col items-center justify-center py-14 px-4 bg-card rounded-xl border border-dashed border-border">
+      <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center mb-4">
+        <Icon className="w-7 h-7 text-muted-foreground/50" />
+      </div>
+      <h4 className="text-base font-semibold text-foreground mb-1">{title}</h4>
+      <p className="text-sm text-muted-foreground mb-5 text-center max-w-sm">
         {description}
       </p>
       <button
         onClick={onAction}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
       >
         <Plus className="w-4 h-4" /> {actionLabel}
       </button>
