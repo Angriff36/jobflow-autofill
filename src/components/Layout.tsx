@@ -5,10 +5,10 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { NotificationBadge, NotificationCenter } from '../features/notifications'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/profile', label: 'Profile', icon: User },
-  { to: '/applications', label: 'Applications', icon: Briefcase },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/app/profile', label: 'Profile', icon: User },
+  { to: '/app/applications', label: 'Applications', icon: Briefcase },
+  { to: '/app/settings', label: 'Settings', icon: Settings },
 ]
 
 export function Layout() {

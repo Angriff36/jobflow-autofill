@@ -7,6 +7,7 @@ import { Layout } from './components/Layout'
 import { AuthProvider } from './features/auth/AuthProvider'
 import { NotificationsProvider } from './features/notifications'
 import { AuthPage } from './features/auth/AuthPage'
+import { LandingPage } from './features/landing/LandingPage'
 
 function App() {
   return (
@@ -14,12 +15,15 @@ function App() {
       <AuthProvider>
         <NotificationsProvider>
           <Routes>
+            {/* Landing page (unauthenticated) */}
+            <Route path="/" element={<LandingPage />} />
+
             {/* Auth routes (no layout) */}
             <Route path="/auth" element={<AuthPage />} />
-            
+
             {/* App routes (with layout) */}
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="/app" element={<Layout />}>
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="profile" element={<ProfileEditor />} />
               <Route path="applications" element={<Applications />} />
