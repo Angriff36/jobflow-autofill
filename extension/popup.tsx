@@ -119,6 +119,22 @@ function PopupApp() {
     setStatus(null)
 
     try {
+      // Check usage limit first
+      const usageResult = await chrome.storage.local.get('usageData')
+      const usage = usageResult.usageData
+      const month = new Date().toISOString().slice(0, 7)
+      const currentCount = (usage && usage.month === month) ? usage.fillCount : 0
+      const plan = usage?.plan || 'free'
+      const FREE_LIMIT = 10
+
+      if (plan === 'free' && currentCount >= FREE_LIMIT) {
+        setStatus({
+          text: `Free limit reached (${currentCount}/${FREE_LIMIT}). Upgrade to Pro for unlimited fills.`,
+          type: 'error'
+        })
+        return
+      }
+
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
 
       if (tab?.id) {
@@ -132,16 +148,19 @@ function PopupApp() {
 
         if (response?.success) {
           const count = response.data.filledCount
-          setStatus({
-            text: count > 0 ? `Filled ${count} field${count !== 1 ? 's' : ''}` : 'No fields could be filled',
-            type: count > 0 ? 'success' : 'error'
-          })
           if (count > 0) {
-            // Track the fill count
             const trackResult = await chrome.runtime.sendMessage({ type: 'TRACK_FILL', payload: { count } })
             if (trackResult?.success) {
               setFillCount(trackResult.data.total)
             }
+            const remaining = FREE_LIMIT - (currentCount + 1)
+            if (plan === 'free' && remaining <= 3) {
+              setStatus({ text: `Filled ${count} fields — ${remaining} free fill${remaining !== 1 ? 's' : ''} left`, type: 'success' })
+            } else {
+              setStatus({ text: `Filled ${count} field${count !== 1 ? 's' : ''}`, type: 'success' })
+            }
+          } else {
+            setStatus({ text: 'No fields could be filled', type: 'error' })
           }
           setTimeout(() => setStatus(null), 4000)
         } else {

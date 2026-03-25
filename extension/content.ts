@@ -790,10 +790,23 @@
 
   async function handleBadgeClick(): Promise<void> {
     try {
+      // Check usage limit first
+      const usageResult = await chrome.storage.local.get('usageData')
+      const usage = usageResult.usageData
+      const month = new Date().toISOString().slice(0, 7)
+      const currentCount = (usage && usage.month === month) ? usage.fillCount : 0
+      const plan = usage?.plan || 'free'
+      const FREE_LIMIT = 10
+
+      if (plan === 'free' && currentCount >= FREE_LIMIT) {
+        showUpgradePrompt(currentCount, FREE_LIMIT)
+        return
+      }
+
       const result = await chrome.storage.local.get('profile')
       const profile = result.profile as Profile | undefined
       if (!profile || !profile.personal?.firstName) {
-        showToast('Please set up your profile first')
+        showToast('Please set up your profile first — click the extension icon')
         return
       }
 
@@ -817,12 +830,41 @@
           type: 'TRACK_FILL',
           payload: { count: filledCount }
         }).catch(() => {})
+        
+        const remaining = FREE_LIMIT - (currentCount + 1)
+        if (plan === 'free' && remaining <= 3 && remaining >= 0) {
+          showToast(`Filled ${filledCount} fields — ${remaining} free fill${remaining !== 1 ? 's' : ''} remaining`)
+        } else {
+          showToast(`Filled ${filledCount} field${filledCount !== 1 ? 's' : ''}`)
+        }
+      } else {
+        showToast('No fields could be filled')
       }
-
-      showToast(`Filled ${filledCount} field${filledCount !== 1 ? 's' : ''}`)
     } catch {
       showToast('Autofill failed')
     }
+  }
+
+  function showUpgradePrompt(used: number, limit: number): void {
+    injectStyles()
+    const existing = document.getElementById('jobflow-upgrade-prompt')
+    if (existing) existing.remove()
+
+    const overlay = document.createElement('div')
+    overlay.id = 'jobflow-upgrade-prompt'
+    overlay.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2147483646;display:flex;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;padding:32px;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+          <div style="font-size:48px;margin-bottom:12px;">🚀</div>
+          <h2 style="font-size:20px;font-weight:700;color:#1e293b;margin:0 0 8px;">You've hit your free limit</h2>
+          <p style="color:#64748b;font-size:14px;margin:0 0 20px;">You've used ${used}/${limit} free fills this month. Upgrade to Pro for unlimited autofills.</p>
+          <a href="https://jobflow-autofill.netlify.app/app/upgrade" target="_blank" style="display:inline-block;padding:12px 32px;background:#2563eb;color:white;font-weight:600;border-radius:8px;text-decoration:none;font-size:15px;">Upgrade to Pro — $9/mo</a>
+          <br>
+          <button onclick="this.closest('#jobflow-upgrade-prompt').remove()" style="margin-top:12px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:13px;">Maybe later</button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(overlay)
   }
 
   function showToast(message: string): void {
