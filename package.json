@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "test:e2e": "node tests/e2e/multi-site-report.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
