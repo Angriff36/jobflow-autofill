@@ -119,6 +119,22 @@ async function handleMessage(
     case 'TRACK_FILL':
       return trackFill(message.payload as { count: number })
 
+    case 'AUTOFILL_CURRENT_PAGE': {
+      // Get profile, then send to active tab's content script
+      const profileResult = await getProfile()
+      if (!profileResult.success || !profileResult.data) {
+        return { success: false, error: 'No profile saved' }
+      }
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (!tab?.id) return { success: false, error: 'No active tab' }
+      
+      const resp = await chrome.tabs.sendMessage(tab.id, {
+        type: 'PERFORM_AUTOFILL',
+        payload: { profile: profileResult.data }
+      }).catch((e: Error) => ({ success: false, error: e.message }))
+      return resp as { success: boolean; data?: unknown; error?: string }
+    }
+
     case 'DETECT_FORM':
       return { success: true, data: { detected: true } }
 
